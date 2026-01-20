@@ -5,20 +5,24 @@ import { useAuth, ProtectedRoute } from "@/lib/auth";
 import { api, Task, ApiClientError } from "@/lib/api";
 import { TaskList } from "@/components/TaskList";
 import { TaskForm } from "@/components/TaskForm";
+import { TaskFilters, FilterStatus } from "@/components/TaskFilters";
 
 function TasksContent() {
   const { user, logout } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [currentFilter, setCurrentFilter] = useState<FilterStatus>("all");
+  const [currentSearch, setCurrentSearch] = useState("");
 
   const fetchTasks = useCallback(async () => {
     try {
       setError("");
       const data = await api.getTasks();
-      setTasks(data);
+      setAllTasks(data);
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message);
@@ -34,6 +38,42 @@ function TasksContent() {
     fetchTasks();
   }, [fetchTasks]);
 
+  // Apply filters client-side for instant feedback
+  useEffect(() => {
+    let result = [...allTasks];
+
+    // Apply status filter
+    if (currentFilter === "pending") {
+      result = result.filter((t) => !t.is_completed);
+    } else if (currentFilter === "completed") {
+      result = result.filter((t) => t.is_completed);
+    }
+
+    // Apply search filter
+    if (currentSearch) {
+      const searchLower = currentSearch.toLowerCase();
+      result = result.filter((t) =>
+        t.title.toLowerCase().includes(searchLower)
+      );
+    }
+
+    setFilteredTasks(result);
+  }, [allTasks, currentFilter, currentSearch]);
+
+  const handleFilterChange = useCallback(
+    (status: FilterStatus, search: string) => {
+      setCurrentFilter(status);
+      setCurrentSearch(search);
+    },
+    []
+  );
+
+  const taskCounts = {
+    all: allTasks.length,
+    pending: allTasks.filter((t) => !t.is_completed).length,
+    completed: allTasks.filter((t) => t.is_completed).length,
+  };
+
   const handleCreate = async (title: string, description: string) => {
     setIsCreating(true);
     try {
@@ -41,7 +81,7 @@ function TasksContent() {
         title,
         description: description || undefined,
       });
-      setTasks((prev) => [newTask, ...prev]);
+      setAllTasks((prev) => [newTask, ...prev]);
       setShowForm(false);
     } finally {
       setIsCreating(false);
@@ -51,7 +91,7 @@ function TasksContent() {
   const handleToggle = async (id: string, completed: boolean) => {
     try {
       const updatedTask = await api.updateTask(id, { is_completed: completed });
-      setTasks((prev) =>
+      setAllTasks((prev) =>
         prev.map((task) => (task.id === id ? updatedTask : task))
       );
     } catch (err) {
@@ -68,7 +108,7 @@ function TasksContent() {
 
     try {
       await api.deleteTask(id);
-      setTasks((prev) => prev.filter((task) => task.id !== id));
+      setAllTasks((prev) => prev.filter((task) => task.id !== id));
     } catch (err) {
       if (err instanceof ApiClientError) {
         setError(err.message);
@@ -104,6 +144,14 @@ function TasksContent() {
           </div>
         )}
 
+        {/* Filters */}
+        <div className="mb-6">
+          <TaskFilters
+            onFilterChange={handleFilterChange}
+            taskCounts={taskCounts}
+          />
+        </div>
+
         {/* Create Task Button / Form */}
         <div className="mb-8">
           {showForm ? (
@@ -132,9 +180,33 @@ function TasksContent() {
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
+        ) : filteredTasks.length === 0 && (currentSearch || currentFilter !== "all") ? (
+          <div className="text-center py-12">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No tasks found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {currentSearch
+                ? `No tasks match "${currentSearch}"`
+                : `No ${currentFilter} tasks`}
+            </p>
+          </div>
         ) : (
           <TaskList
-            tasks={tasks}
+            tasks={filteredTasks}
             onToggle={handleToggle}
             onDelete={handleDelete}
           />

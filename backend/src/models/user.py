@@ -27,6 +27,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from src.models.base import utc_now
 
 if TYPE_CHECKING:
+    from src.models.conversation import Conversation
     from src.models.task import Task
 
 
@@ -78,6 +79,12 @@ class User(UserBase, table=True):
 
     # Relationship to tasks (one-to-many with cascade delete)
     tasks: list["Task"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+
+    # Relationship to conversations (one-to-many with cascade delete) - Phase 3
+    conversations: list["Conversation"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )

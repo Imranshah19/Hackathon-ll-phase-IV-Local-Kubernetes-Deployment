@@ -163,3 +163,92 @@ def invalid_task_descriptions() -> list[str]:
     return [
         "x" * 4001,           # Exceeds 4000 char limit
     ]
+
+
+# =============================================================================
+# Phase 3 AI Chat Fixtures
+# =============================================================================
+
+from src.ai.types import CommandAction, InterpretedCommand, StatusFilter
+from src.config.ai_config import AIConfig
+
+
+@pytest.fixture
+def ai_config() -> AIConfig:
+    """Provide test AI configuration."""
+    return AIConfig(
+        openai_api_key="test-key",
+        ai_timeout_seconds=5.0,
+        confidence_threshold_high=0.8,
+        confidence_threshold_low=0.5,
+    )
+
+
+@pytest.fixture
+def high_confidence_add_command() -> InterpretedCommand:
+    """Provide a high-confidence ADD command for testing."""
+    return InterpretedCommand(
+        original_text="Add a task to buy groceries",
+        action=CommandAction.ADD,
+        confidence=0.95,
+        suggested_cli='bonsai add "buy groceries"',
+        title="buy groceries",
+    )
+
+
+@pytest.fixture
+def low_confidence_command() -> InterpretedCommand:
+    """Provide a low-confidence command for testing."""
+    return InterpretedCommand(
+        original_text="maybe do something",
+        action=CommandAction.ADD,
+        confidence=0.3,
+        suggested_cli='bonsai add "something"',
+        clarification_needed="What would you like to add?",
+    )
+
+
+@pytest.fixture
+def medium_confidence_delete_command() -> InterpretedCommand:
+    """Provide a medium-confidence DELETE command for testing."""
+    task_id = uuid4()
+    return InterpretedCommand(
+        original_text="delete task 1",
+        action=CommandAction.DELETE,
+        confidence=0.65,
+        suggested_cli=f"bonsai delete {task_id}",
+        task_id=task_id,
+    )
+
+
+@pytest.fixture
+def list_pending_command() -> InterpretedCommand:
+    """Provide a LIST command with pending filter."""
+    return InterpretedCommand(
+        original_text="show my pending tasks",
+        action=CommandAction.LIST,
+        confidence=0.9,
+        suggested_cli="bonsai list --pending",
+        status_filter=StatusFilter.PENDING,
+    )
+
+
+@pytest.fixture
+def unknown_command() -> InterpretedCommand:
+    """Provide an UNKNOWN command for testing."""
+    return InterpretedCommand(
+        original_text="blah blah blah",
+        action=CommandAction.UNKNOWN,
+        confidence=0.1,
+        suggested_cli="bonsai help",
+    )
+
+
+@pytest.fixture
+def sample_tasks_for_ai() -> list[dict[str, Any]]:
+    """Provide sample tasks for AI context."""
+    return [
+        {"id": str(uuid4()), "title": "Buy groceries", "is_completed": False},
+        {"id": str(uuid4()), "title": "Call mom", "is_completed": False},
+        {"id": str(uuid4()), "title": "Finish report", "is_completed": True},
+    ]

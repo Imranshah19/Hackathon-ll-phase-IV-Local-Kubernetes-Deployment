@@ -70,17 +70,24 @@ async def list_tasks(
     session: DbSession,
     user_id: CurrentUserId,
     completed: bool | None = None,
+    search: str | None = None,
 ) -> list[TaskPublic]:
     """
     Get all tasks for the current user.
 
-    Optional filter by completion status.
+    Optional filters:
+    - completed: Filter by completion status (true/false)
+    - search: Filter by title containing search term (case-insensitive)
+
     Results are ordered by creation date (newest first).
     """
     query = select(Task).where(Task.user_id == user_id)
 
     if completed is not None:
         query = query.where(Task.is_completed == completed)
+
+    if search:
+        query = query.where(Task.title.ilike(f"%{search}%"))  # type: ignore
 
     query = query.order_by(Task.created_at.desc())  # type: ignore
 

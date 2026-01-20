@@ -96,6 +96,61 @@ export interface ApiError {
 }
 
 // =============================================================================
+// Chat Types (Phase 3)
+// =============================================================================
+
+export interface ChatMessageRequest {
+  message: string;
+  conversation_id?: string;
+}
+
+export interface ChatMessageResponse {
+  message: string;
+  confidence: number;
+  action: string | null;
+  suggested_cli: string | null;
+  needs_confirmation: boolean;
+  is_fallback: boolean;
+  conversation_id: string;
+  message_id: string;
+  task: Task | null;
+  tasks: Task[] | null;
+}
+
+export interface ConfirmActionRequest {
+  conversation_id: string;
+  confirmed: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  user_id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationList {
+  conversations: Conversation[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  generated_command: string | null;
+  confidence_score: number | null;
+  timestamp: string;
+}
+
+export interface ConversationDetail extends Conversation {
+  messages: Message[];
+}
+
+// =============================================================================
 // API Client
 // =============================================================================
 
@@ -193,9 +248,16 @@ class ApiClient {
   // Task Endpoints
   // ---------------------------------------------------------------------------
 
-  async getTasks(completed?: boolean): Promise<Task[]> {
-    const params = completed !== undefined ? `?completed=${completed}` : "";
-    return this.request<Task[]>(`/api/tasks${params}`);
+  async getTasks(options?: { completed?: boolean; search?: string }): Promise<Task[]> {
+    const params = new URLSearchParams();
+    if (options?.completed !== undefined) {
+      params.append("completed", String(options.completed));
+    }
+    if (options?.search) {
+      params.append("search", options.search);
+    }
+    const queryString = params.toString();
+    return this.request<Task[]>(`/api/tasks${queryString ? `?${queryString}` : ""}`);
   }
 
   async getTask(id: string): Promise<Task> {
@@ -218,6 +280,60 @@ class ApiClient {
 
   async deleteTask(id: string): Promise<void> {
     return this.request<void>(`/api/tasks/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Chat Endpoints (Phase 3)
+  // ---------------------------------------------------------------------------
+
+  async sendChatMessage(data: ChatMessageRequest): Promise<ChatMessageResponse> {
+    return this.request<ChatMessageResponse>("/api/chat/message", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async confirmChatAction(data: ConfirmActionRequest): Promise<ChatMessageResponse> {
+    return this.request<ChatMessageResponse>("/api/chat/confirm", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getConversations(options?: { limit?: number; offset?: number }): Promise<ConversationList> {
+    const params = new URLSearchParams();
+    if (options?.limit !== undefined) {
+      params.append("limit", String(options.limit));
+    }
+    if (options?.offset !== undefined) {
+      params.append("offset", String(options.offset));
+    }
+    const queryString = params.toString();
+    return this.request<ConversationList>(`/api/conversations${queryString ? `?${queryString}` : ""}`);
+  }
+
+  async getConversation(id: string): Promise<ConversationDetail> {
+    return this.request<ConversationDetail>(`/api/conversations/${id}`);
+  }
+
+  async createConversation(title?: string): Promise<Conversation> {
+    return this.request<Conversation>("/api/conversations", {
+      method: "POST",
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  async updateConversation(id: string, title: string): Promise<Conversation> {
+    return this.request<Conversation>(`/api/conversations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  async deleteConversation(id: string): Promise<void> {
+    return this.request<void>(`/api/conversations/${id}`, {
       method: "DELETE",
     });
   }

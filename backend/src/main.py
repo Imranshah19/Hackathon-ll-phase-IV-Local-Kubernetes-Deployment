@@ -9,6 +9,10 @@ Configures the main application with:
 """
 
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -125,9 +129,13 @@ def create_app() -> FastAPI:
 
     from src.api.auth import router as auth_router
     from src.api.tasks import router as tasks_router
+    from src.api.chat import router as chat_router
+    from src.api.conversations import router as conversations_router
 
     app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
     app.include_router(tasks_router, prefix="/api/tasks", tags=["Tasks"])
+    app.include_router(chat_router, prefix="/api/chat", tags=["Chat"])
+    app.include_router(conversations_router, prefix="/api/conversations", tags=["Conversations"])
 
     return app
 

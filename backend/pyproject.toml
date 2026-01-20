@@ -41,6 +41,10 @@ dependencies = [
 
     # Database Migrations
     "alembic>=1.13.0",
+
+    # AI Integration (Phase 3)
+    "openai>=1.12.0",
+    "anthropic>=0.18.0",
 ]
 
 [project.optional-dependencies]

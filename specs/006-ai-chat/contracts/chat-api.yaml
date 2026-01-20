@@ -1,0 +1,420 @@
+openapi: 3.0.3
+info:
+  title: Phase 3 AI Chat API
+  description: |
+    REST API for natural language task management via AI chat interface.
+    Part of the Hackathon II Todo App - Phase 3 implementation.
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: /api/v1
+    description: API v1 prefix
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Chat
+    description: AI-powered chat operations
+  - name: Conversations
+    description: Conversation management
+
+paths:
+  /chat/message:
+    post:
+      operationId: sendMessage
+      summary: Send a natural language message
+      description: |
+        Accepts a natural language message, interprets it using AI,
+        and executes the corresponding Bonsai CLI command.
+        Returns the result or asks for clarification if needed.
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageRequest'
+            examples:
+              createTask:
+                summary: Create a task
+                value:
+                  conversation_id: "550e8400-e29b-41d4-a716-446655440000"
+                  content: "Add a task to buy groceries tomorrow"
+              listTasks:
+                summary: List tasks
+                value:
+                  conversation_id: "550e8400-e29b-41d4-a716-446655440000"
+                  content: "Show my pending tasks"
+              completeTask:
+                summary: Complete a task
+                value:
+                  conversation_id: "550e8400-e29b-41d4-a716-446655440000"
+                  content: "Mark task 3 as done"
+      responses:
+        '200':
+          description: Message processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessageResponse'
+        '202':
+          description: Clarification needed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClarificationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: AI service unavailable - fallback to CLI
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FallbackResponse'
+
+  /chat/conversations:
+    get:
+      operationId: listConversations
+      summary: List user's conversations
+      tags:
+        - Conversations
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Conversations retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      operationId: createConversation
+      summary: Start a new conversation
+      tags:
+        - Conversations
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConversationRequest'
+      responses:
+        '201':
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /chat/conversations/{conversationId}:
+    get:
+      operationId: getConversation
+      summary: Get conversation with messages
+      tags:
+        - Conversations
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: message_limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Conversation retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      operationId: deleteConversation
+      summary: Delete a conversation
+      tags:
+        - Conversations
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Conversation deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ChatMessageRequest:
+      type: object
+      required:
+        - content
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+          description: Conversation ID (optional - creates new if omitted)
+        content:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: Natural language message
+
+    ChatMessageResponse:
+      type: object
+      required:
+        - conversation_id
+        - message_id
+        - response
+        - action_taken
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+        message_id:
+          type: string
+          format: uuid
+        response:
+          type: string
+          description: Human-readable response to user
+        action_taken:
+          type: string
+          enum: [created, listed, updated, deleted, completed, none]
+        executed_command:
+          type: string
+          description: The Bonsai CLI command that was executed
+        affected_task:
+          $ref: '#/components/schemas/TaskSummary'
+        tasks_returned:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskSummary'
+
+    ClarificationResponse:
+      type: object
+      required:
+        - conversation_id
+        - message_id
+        - question
+        - suggested_command
+      properties:
+        conversation_id:
+          type: string
+          format: uuid
+        message_id:
+          type: string
+          format: uuid
+        question:
+          type: string
+          description: Clarification question for user
+        suggested_command:
+          type: string
+          description: Best-guess CLI command
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: AI interpretation confidence
+
+    FallbackResponse:
+      type: object
+      required:
+        - error
+        - cli_instructions
+      properties:
+        error:
+          type: string
+          description: Error description
+        cli_instructions:
+          type: string
+          description: How to use CLI directly
+        example_commands:
+          type: array
+          items:
+            type: string
+          description: Example Bonsai CLI commands
+
+    Conversation:
+      type: object
+      required:
+        - id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 100
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ConversationList:
+      type: object
+      required:
+        - conversations
+        - total
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversation'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    ConversationDetail:
+      allOf:
+        - $ref: '#/components/schemas/Conversation'
+        - type: object
+          required:
+            - messages
+          properties:
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/Message'
+
+    Message:
+      type: object
+      required:
+        - id
+        - role
+        - content
+        - timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        generated_command:
+          type: string
+          description: CLI command (assistant messages only)
+        confidence_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        timestamp:
+          type: string
+          format: date-time
+
+    TaskSummary:
+      type: object
+      required:
+        - id
+        - title
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          enum: [pending, completed]
+        due:
+          type: string
+          format: date
+
+    CreateConversationRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 100
+
+    Error:
+      type: object
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
