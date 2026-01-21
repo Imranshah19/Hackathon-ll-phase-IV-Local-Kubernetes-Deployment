@@ -28,14 +28,18 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # Check for required environment variables
-if (-not $env:DATABASE_URL) {
-    Write-Host "Warning: DATABASE_URL is not set" -ForegroundColor Yellow
-    Write-Host "Set it with: `$env:DATABASE_URL = 'your-neon-connection-string'"
+if (-not $env:NEON_DB_URL -and -not $env:DATABASE_URL) {
+    Write-Host "Warning: NEON_DB_URL is not set" -ForegroundColor Yellow
+    Write-Host "Set it with: `$env:NEON_DB_URL = 'postgresql://user:pass@ep-xxx.neon.tech/db?sslmode=require'"
+    Write-Host "Note: Database must be in Neon cloud, NOT in Minikube"
     $response = Read-Host "Continue anyway? (y/N)"
     if ($response -ne 'y' -and $response -ne 'Y') {
         exit 1
     }
 }
+
+# Use NEON_DB_URL if set, otherwise fall back to DATABASE_URL
+$DB_URL = if ($env:NEON_DB_URL) { $env:NEON_DB_URL } else { $env:DATABASE_URL }
 
 # Configure Docker to use Minikube's daemon
 Write-Host "Configuring Docker environment..." -ForegroundColor Green
@@ -55,18 +59,37 @@ Write-Host "Deploying with Helm..." -ForegroundColor Green
 # Prepare helm values
 $helmSetFlags = @()
 
-if ($env:DATABASE_URL) {
-    $helmSetFlags += "--set", "secrets.databaseUrl=$($env:DATABASE_URL)"
+# Database (Neon - external cloud)
+if ($DB_URL) {
+    $helmSetFlags += "--set", "secrets.neonDbUrl=$DB_URL"
 }
 
-if ($env:JWT_SECRET_KEY) {
-    $helmSetFlags += "--set", "secrets.jwtSecret=$($env:JWT_SECRET_KEY)"
+# Authentication
+if ($env:AUTH_SECRET) {
+    $helmSetFlags += "--set", "secrets.authSecret=$($env:AUTH_SECRET)"
+} elseif ($env:JWT_SECRET_KEY) {
+    $helmSetFlags += "--set", "secrets.authSecret=$($env:JWT_SECRET_KEY)"
 } else {
-    $helmSetFlags += "--set", "secrets.jwtSecret=development-jwt-secret-key-min-32-chars"
+    $helmSetFlags += "--set", "secrets.authSecret=development-auth-secret-key-min-32-chars"
 }
 
+# Next.js domain key
+if ($env:NEXT_DOMAIN_KEY) {
+    $helmSetFlags += "--set", "secrets.nextDomainKey=$($env:NEXT_DOMAIN_KEY)"
+}
+
+# OpenAI
 if ($env:OPENAI_API_KEY) {
     $helmSetFlags += "--set", "secrets.openaiApiKey=$($env:OPENAI_API_KEY)"
+}
+
+# AI Configuration (optional)
+if ($env:OPENAI_MODEL) {
+    $helmSetFlags += "--set", "config.openaiModel=$($env:OPENAI_MODEL)"
+}
+
+if ($env:AGENT_NAME) {
+    $helmSetFlags += "--set", "config.agentName=$($env:AGENT_NAME)"
 }
 
 # Run helm upgrade --install

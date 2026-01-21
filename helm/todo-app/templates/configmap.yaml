@@ -5,6 +5,12 @@ metadata:
   labels:
     {{- include "todo-app.labels" . | nindent 4 }}
 data:
+  # Application Configuration
   LOG_LEVEL: {{ .Values.config.logLevel | quote }}
   ENVIRONMENT: {{ .Values.config.environment | quote }}
   API_VERSION: {{ .Values.config.apiVersion | quote }}
+  # AI Configuration
+  OPENAI_MODEL: {{ .Values.config.openaiModel | quote }}
+  AGENT_NAME: {{ .Values.config.agentName | quote }}
+  # Service URLs
+  BASE_URL: {{ .Values.config.baseUrl | quote }}

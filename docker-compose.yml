@@ -20,9 +20,18 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-in-production}
+      # Database (Neon - external cloud, NOT in Docker)
+      - DATABASE_URL=${NEON_DB_URL:-${DATABASE_URL}}
+      - NEON_DB_URL=${NEON_DB_URL:-${DATABASE_URL}}
+      # Authentication
+      - AUTH_SECRET=${AUTH_SECRET:-${JWT_SECRET_KEY:-your-super-secret-auth-key-change-in-production}}
+      - JWT_SECRET_KEY=${AUTH_SECRET:-${JWT_SECRET_KEY:-your-super-secret-auth-key-change-in-production}}
+      # AI Configuration
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - AGENT_NAME=${AGENT_NAME:-todo-assistant}
+      - BASE_URL=http://localhost:8000
+      # Application
       - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
       - ENVIRONMENT=development
       - LOG_LEVEL=INFO
@@ -48,6 +57,8 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_DOMAIN_KEY=${NEXT_DOMAIN_KEY:-}
+      - AUTH_SECRET=${AUTH_SECRET:-${JWT_SECRET_KEY:-your-super-secret-auth-key-change-in-production}}
     depends_on:
       backend:
         condition: service_healthy

@@ -36,6 +36,18 @@ spec:
             # Backend API URL - use ingress host for external access
             - name: NEXT_PUBLIC_API_URL
               value: "http://{{ .Values.ingress.host }}/api"
+            # Next.js domain key for authentication
+            - name: NEXT_DOMAIN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "todo-app.secret.name" . }}
+                  key: NEXT_DOMAIN_KEY
+            # Auth secret for session management
+            - name: AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "todo-app.secret.name" . }}
+                  key: AUTH_SECRET
           livenessProbe:
             {{- toYaml .Values.frontend.livenessProbe | nindent 12 }}
           readinessProbe:

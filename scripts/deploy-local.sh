@@ -34,15 +34,19 @@ if ! minikube status &> /dev/null; then
 fi
 
 # Check for required environment variables
-if [ -z "$DATABASE_URL" ]; then
-    echo -e "${YELLOW}Warning: DATABASE_URL is not set${NC}"
-    echo "Set it with: export DATABASE_URL='your-neon-connection-string'"
+if [ -z "$NEON_DB_URL" ] && [ -z "$DATABASE_URL" ]; then
+    echo -e "${YELLOW}Warning: NEON_DB_URL is not set${NC}"
+    echo "Set it with: export NEON_DB_URL='postgresql://user:pass@ep-xxx.neon.tech/db?sslmode=require'"
+    echo "Note: Database must be in Neon cloud, NOT in Minikube"
     read -p "Continue anyway? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         exit 1
     fi
 fi
+
+# Use NEON_DB_URL if set, otherwise fall back to DATABASE_URL
+DB_URL="${NEON_DB_URL:-$DATABASE_URL}"
 
 # Configure Docker to use Minikube's daemon
 echo -e "${GREEN}Configuring Docker environment...${NC}"
@@ -62,18 +66,37 @@ echo -e "${GREEN}Deploying with Helm...${NC}"
 # Prepare helm values
 HELM_SET_FLAGS=""
 
-if [ -n "$DATABASE_URL" ]; then
-    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.databaseUrl=${DATABASE_URL}"
+# Database (Neon - external cloud)
+if [ -n "$DB_URL" ]; then
+    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.neonDbUrl=${DB_URL}"
 fi
 
-if [ -n "$JWT_SECRET_KEY" ]; then
-    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.jwtSecret=${JWT_SECRET_KEY}"
+# Authentication
+if [ -n "$AUTH_SECRET" ]; then
+    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.authSecret=${AUTH_SECRET}"
+elif [ -n "$JWT_SECRET_KEY" ]; then
+    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.authSecret=${JWT_SECRET_KEY}"
 else
-    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.jwtSecret=development-jwt-secret-key-min-32-chars"
+    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.authSecret=development-auth-secret-key-min-32-chars"
 fi
 
+# Next.js domain key
+if [ -n "$NEXT_DOMAIN_KEY" ]; then
+    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.nextDomainKey=${NEXT_DOMAIN_KEY}"
+fi
+
+# OpenAI
 if [ -n "$OPENAI_API_KEY" ]; then
     HELM_SET_FLAGS="${HELM_SET_FLAGS} --set secrets.openaiApiKey=${OPENAI_API_KEY}"
+fi
+
+# AI Configuration (optional)
+if [ -n "$OPENAI_MODEL" ]; then
+    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set config.openaiModel=${OPENAI_MODEL}"
+fi
+
+if [ -n "$AGENT_NAME" ]; then
+    HELM_SET_FLAGS="${HELM_SET_FLAGS} --set config.agentName=${AGENT_NAME}"
 fi
 
 # Run helm upgrade --install

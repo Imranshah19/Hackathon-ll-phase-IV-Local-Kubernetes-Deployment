@@ -153,6 +153,11 @@ config:
   logLevel: INFO
   environment: development
   apiVersion: v1
+  # AI Configuration
+  openaiModel: gpt-4o-mini
+  agentName: todo-assistant
+  # Backend base URL (for internal service communication)
+  baseUrl: http://todo-app-backend:8000
 
 # -----------------------------------------------------------------------------
 # Secrets Configuration
@@ -160,10 +165,32 @@ config:
 # WARNING: Do not commit actual secrets to version control!
 # Use --set or external secrets management in production
 secrets:
-  # Base64 encoded values (use: echo -n "value" | base64)
-  databaseUrl: ""
-  jwtSecret: ""
+  # Neon PostgreSQL connection string (external cloud DB)
+  neonDbUrl: ""
+  # OpenAI API Key for AI chat features
   openaiApiKey: ""
+  # Next.js domain key (for frontend auth)
+  nextDomainKey: ""
+  # Auth secret for JWT signing (min 32 characters)
+  authSecret: ""
+
+# -----------------------------------------------------------------------------
+# Horizontal Pod Autoscaler (HPA)
+# -----------------------------------------------------------------------------
+autoscaling:
+  enabled: false
+  # Backend HPA
+  backend:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  # Frontend HPA
+  frontend:
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
 
 # -----------------------------------------------------------------------------
 # Service Account
