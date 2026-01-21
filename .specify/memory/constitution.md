@@ -1,16 +1,14 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 2.0.0 → 2.1.0 (Technology stack refinement)
+Version change: 2.1.0 → 3.0.0 (Phase 4: Local Kubernetes Deployment)
 Modified principles: none
 Modified sections:
-  - Phase 1: Simplified execution constraints
-  - Phase 2: Clarified as "Full-Stack Web App"
-  - Phase 3: Added stateless AI Chat Layer note, refined architecture
-  - Technology Stack: Added OpenAI Agents SDK, MCP Server, OpenAI ChatKit
-  - Dataset Schema: Normalized to 3 tables (tasks, conversations, messages)
-  - Architecture: Added NLP Interpreter as explicit step
-Added sections: none
+  - Phases: Added Phase 4 (Local Kubernetes Deployment)
+  - Technology Stack: Added Docker, Kubernetes, Minikube, Helm, kubectl-ai, kagent
+  - Project Structure: Added Kubernetes and Helm directories
+Added sections:
+  - Phase 4: Local Kubernetes Deployment (Minikube + Helm + AI-Ops)
 Removed sections: none
 Templates requiring updates:
   - .specify/templates/plan-template.md ✅ compatible
@@ -23,9 +21,9 @@ Follow-up TODOs: none
 
 **Project**: AI-Powered Todo Chatbot
 **Mode**: Spec-Driven Development (SDD)
-**Tech Modes**: CLI + Web + AI Chat
-**Phases**: 1 → 2 → 3
-**Goal**: Build Todo App starting from console, evolve to AI-powered Chatbot
+**Tech Modes**: CLI + Web + AI Chat + Cloud-Native
+**Phases**: 1 → 2 → 3 → 4
+**Goal**: Build Todo App starting from console, evolve to AI-powered Chatbot, deploy to Kubernetes
 
 ---
 
@@ -115,6 +113,63 @@ User → AI Chat Layer → NLP Interpreter → SP.Plan Generator
 - Phase 3 reuses Phase 2 Bonsai CLI as execution engine
 - AI automation layer only interprets commands; does NOT replace CLI
 - Natural language → SP.Plan → Bonsai ensures Phase 2 backward compatibility
+
+---
+
+### Phase 4: Local Kubernetes Deployment (Minikube + Helm + AI-Ops)
+
+**Objective**: Containerize Phase 3 application and deploy to local Kubernetes cluster using Minikube, Helm charts, and AI-assisted operations via kubectl-ai/kagent.
+
+| Deliverable | Description |
+|-------------|-------------|
+| Dockerfiles | Container definitions for frontend and backend |
+| Helm Chart | Kubernetes deployment package with templates |
+| Kubernetes Manifests | Deployments, Services, Ingress, ConfigMaps, Secrets |
+| AI-Ops Integration | kubectl-ai and/or kagent for natural language cluster management |
+| Deployment Scripts | Minikube setup and deployment automation |
+
+**Core Motivation**:
+- Decouple state from compute (stateless containers + external DB)
+- Enable container portability
+- Enable zero-state servers
+- Enable operational AI tooling
+- Align with cloud-native micro-oriented blueprinting
+
+**Architecture**:
+```text
+User Browser → Ingress (todo.local)
+    → Frontend Service → Frontend Pods (Next.js)
+    → Backend Service → Backend Pods (FastAPI)
+        → Neon PostgreSQL (External)
+```
+
+**Execution Flow**:
+```text
+1. Developer runs `minikube start`
+2. Developer runs `helm install todo-app ./helm/todo-app`
+3. Kubernetes creates Deployments, Services, Ingress
+4. Pods pull images and start containers
+5. Backend connects to external Neon PostgreSQL
+6. Ingress routes traffic to services
+7. User accesses http://todo.local
+```
+
+**Key Components**:
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Orchestration | Kubernetes (Minikube) | Local container orchestration |
+| Packaging | Docker + Helm | Containerization and deployment |
+| Traffic | Ingress Controller | External traffic routing |
+| Config | ConfigMaps | Non-sensitive configuration |
+| Secrets | Kubernetes Secrets | Sensitive configuration |
+| AI-Ops | kubectl-ai / kagent | Natural language cluster operations |
+| Database | Neon PostgreSQL | External managed database (stateless compute) |
+
+**Critical Notes**:
+- Phase 4 reuses Phase 3 application code unchanged
+- Only packaging and deployment changes; no business logic modifications
+- All containers are stateless; state persists in external Neon PostgreSQL
+- AI-Ops layer provides natural language interface for kubectl commands
 
 ---
 
@@ -270,10 +325,26 @@ AI features MUST NOT block core functionality when unavailable.
 | Bonsai CLI | Python Click | Command execution engine (Phase 2 reuse) |
 | Conversation Store | JSON/PostgreSQL | Chat history persistence |
 
+### Phase 4 Kubernetes Stack
+
+| Component | Technology | Version/Notes |
+|-----------|------------|---------------|
+| Container Runtime | Docker | Multi-stage builds |
+| Container Orchestration | Kubernetes | Via Minikube (local) |
+| Local Cluster | Minikube | Development environment |
+| Package Manager | Helm 3.x | Chart-based deployment |
+| Ingress Controller | NGINX Ingress | Traffic routing |
+| AI-Ops CLI | kubectl-ai | Natural language kubectl |
+| AI-Ops Agent | kagent | Intelligent cluster management |
+| Database | Neon PostgreSQL | External serverless (unchanged) |
+| Secret Management | Kubernetes Secrets | Encrypted at rest |
+| Configuration | ConfigMaps | Environment configuration |
+
 ### Project Structure
 
 ```text
 backend/
+├── Dockerfile            # Phase 4: Container definition
 ├── src/
 │   ├── models/       # SQLModel entities
 │   ├── services/     # Business logic
@@ -297,6 +368,7 @@ backend/
     └── ai/           # AI interpretation tests
 
 frontend/
+├── Dockerfile            # Phase 4: Container definition
 ├── src/
 │   ├── app/          # Next.js App Router pages
 │   ├── components/   # React components
@@ -305,6 +377,26 @@ frontend/
 └── tests/
     ├── component/    # Component tests
     └── e2e/          # End-to-end tests
+
+# Phase 4: Kubernetes Deployment
+helm/
+└── todo-app/
+    ├── Chart.yaml        # Helm chart metadata
+    ├── values.yaml       # Default configuration
+    └── templates/
+        ├── _helpers.tpl          # Template helpers
+        ├── backend-deployment.yaml
+        ├── backend-service.yaml
+        ├── frontend-deployment.yaml
+        ├── frontend-service.yaml
+        ├── ingress.yaml
+        ├── configmap.yaml
+        └── secrets.yaml
+
+scripts/
+├── minikube-setup.sh     # Minikube initialization
+├── deploy-local.sh       # Local deployment
+└── teardown.sh           # Cleanup
 ```
 
 ## Development Workflow
@@ -409,4 +501,4 @@ The dataset is normalized into three tables/files for clean separation of concer
 }
 ```
 
-**Version**: 2.1.0 | **Ratified**: 2026-01-12 | **Last Amended**: 2026-01-19
+**Version**: 3.0.0 | **Ratified**: 2026-01-12 | **Last Amended**: 2026-01-21

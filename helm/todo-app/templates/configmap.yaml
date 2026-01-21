@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "todo-app.configmap.name" . }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+data:
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  ENVIRONMENT: {{ .Values.config.environment | quote }}
+  API_VERSION: {{ .Values.config.apiVersion | quote }}

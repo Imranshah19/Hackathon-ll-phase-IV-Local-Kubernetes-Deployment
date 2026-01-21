@@ -1,0 +1,16 @@
+apiVersion: v2
+name: todo-app
+description: AI-Powered Todo Chatbot Helm Chart for Kubernetes deployment
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - todo
+  - fastapi
+  - nextjs
+  - ai
+  - chatbot
+home: https://github.com/your-org/todo-app
+maintainers:
+  - name: Todo App Team
+    email: team@example.com

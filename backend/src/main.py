@@ -115,15 +115,6 @@ def create_app() -> FastAPI:
         )
 
     # -------------------------------------------------------------------------
-    # Health Check
-    # -------------------------------------------------------------------------
-
-    @app.get("/health", tags=["Health"])
-    async def health_check() -> dict[str, str]:
-        """Health check endpoint for load balancers and monitoring."""
-        return {"status": "healthy"}
-
-    # -------------------------------------------------------------------------
     # API Routers
     # -------------------------------------------------------------------------
 
@@ -131,7 +122,12 @@ def create_app() -> FastAPI:
     from src.api.tasks import router as tasks_router
     from src.api.chat import router as chat_router
     from src.api.conversations import router as conversations_router
+    from src.api.health import router as health_router
 
+    # Health endpoints (no prefix for Kubernetes compatibility)
+    app.include_router(health_router, tags=["Health"])
+
+    # API endpoints
     app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
     app.include_router(tasks_router, prefix="/api/tasks", tags=["Tasks"])
     app.include_router(chat_router, prefix="/api/chat", tags=["Chat"])

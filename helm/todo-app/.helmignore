@@ -1,0 +1,36 @@
+# Patterns to ignore when building packages.
+# This supports shell glob matching, relative path matching, and
+# negation (prefixed with !). Only one pattern per line.
+
+# VCS
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.tgz
+.DS_Store
+
+# Test files
+tests/
+*_test.yaml
+
+# Documentation
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml

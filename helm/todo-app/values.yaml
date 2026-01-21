@@ -1,0 +1,174 @@
+# =============================================================================
+# Todo App Helm Chart Values
+# =============================================================================
+# Default configuration values for the Todo App deployment
+# Override these values using --set or a custom values file
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global Settings
+# -----------------------------------------------------------------------------
+nameOverride: ""
+fullnameOverride: ""
+
+# -----------------------------------------------------------------------------
+# Backend Configuration
+# -----------------------------------------------------------------------------
+backend:
+  enabled: true
+
+  # Image settings
+  image:
+    repository: todo-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Replica count
+  replicas: 2
+
+  # Resource limits
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8000
+
+  # Probes
+  livenessProbe:
+    httpGet:
+      path: /health/live
+      port: 8000
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health/ready
+      port: 8000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Pod annotations
+  podAnnotations: {}
+
+  # Node selector
+  nodeSelector: {}
+
+  # Tolerations
+  tolerations: []
+
+  # Affinity rules
+  affinity: {}
+
+# -----------------------------------------------------------------------------
+# Frontend Configuration
+# -----------------------------------------------------------------------------
+frontend:
+  enabled: true
+
+  # Image settings
+  image:
+    repository: todo-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  # Replica count
+  replicas: 2
+
+  # Resource limits
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3000
+
+  # Probes
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Pod annotations
+  podAnnotations: {}
+
+  # Node selector
+  nodeSelector: {}
+
+  # Tolerations
+  tolerations: []
+
+  # Affinity rules
+  affinity: {}
+
+# -----------------------------------------------------------------------------
+# Ingress Configuration
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  host: todo.local
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+  tls: []
+  # - secretName: todo-tls
+  #   hosts:
+  #     - todo.local
+
+# -----------------------------------------------------------------------------
+# ConfigMap Configuration
+# -----------------------------------------------------------------------------
+config:
+  logLevel: INFO
+  environment: development
+  apiVersion: v1
+
+# -----------------------------------------------------------------------------
+# Secrets Configuration
+# -----------------------------------------------------------------------------
+# WARNING: Do not commit actual secrets to version control!
+# Use --set or external secrets management in production
+secrets:
+  # Base64 encoded values (use: echo -n "value" | base64)
+  databaseUrl: ""
+  jwtSecret: ""
+  openaiApiKey: ""
+
+# -----------------------------------------------------------------------------
+# Service Account
+# -----------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
