@@ -1,0 +1,62 @@
+# =============================================================================
+# Docker Compose for Quick Local Development
+# =============================================================================
+# Uses simplified Dockerfiles for faster builds
+# Usage:
+#   docker-compose -f docker-compose.dev.yml up -d      # Start services
+#   docker-compose -f docker-compose.dev.yml down       # Stop services
+#   docker-compose -f docker-compose.dev.yml build      # Rebuild images
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend Service - FastAPI (Dev Build)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: todo-backend-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-${NEON_DB_URL}}
+      - NEON_DB_URL=${NEON_DB_URL:-${DATABASE_URL}}
+      - AUTH_SECRET=${AUTH_SECRET:-${JWT_SECRET_KEY:-dev-secret-key}}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-${AUTH_SECRET:-dev-secret-key}}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - AGENT_NAME=${AGENT_NAME:-todo-assistant}
+      - BASE_URL=http://localhost:8000
+      - CORS_ORIGINS=http://localhost:3000
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+    restart: unless-stopped
+    networks:
+      - todo-network-dev
+
+  # ---------------------------------------------------------------------------
+  # Frontend Service - Next.js (Dev Build)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: todo-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - AUTH_SECRET=${AUTH_SECRET:-${JWT_SECRET_KEY:-dev-secret-key}}
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - todo-network-dev
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  todo-network-dev:
+    driver: bridge

@@ -1,0 +1,28 @@
+# =============================================================================
+# Frontend Dockerfile (Development) - Simple single-stage build
+# =============================================================================
+# Use this for local development and quick testing
+# For production, use the main Dockerfile (multi-stage)
+# =============================================================================
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Expose port
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "start"]
