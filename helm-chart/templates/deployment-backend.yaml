@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: todo-backend
 spec:
-  replicas: {{ .Values.backend.replicas }}
+  replicas: 2
   selector:
     matchLabels:
       app: todo-backend
@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: backend
-          image: {{ .Values.backend.image }}
+          image: todo-backend:phase4
           ports:
-            - containerPort: {{ .Values.backend.port }}
+            - containerPort: 8000
