@@ -152,11 +152,110 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 - **Phase 1**: Constitution + Specification + Planning
 - **Phase 2**: Backend + Frontend Implementation
-- **Phase 3**: AI Integration + Deployment (Current)
+- **Phase 3**: AI Integration + Deployment
+- **Phase 4**: Local Kubernetes Deployment (Current)
 
 See [docs/](./docs/) for detailed phase documentation.
 
-## Deployment
+---
+
+## Phase 4: Kubernetes Deployment
+
+Deploy the Todo application on a local Kubernetes cluster using Minikube and Helm.
+
+### Prerequisites
+
+- Docker Desktop
+- Minikube
+- Helm 3.x
+- kubectl
+
+### Quick Start (Kubernetes)
+
+```bash
+# 1. Start Minikube
+./scripts/minikube-setup.sh   # Linux/macOS
+# OR
+./scripts/minikube-setup.ps1  # Windows
+
+# 2. Deploy application
+./scripts/deploy-local.sh     # Linux/macOS
+# OR
+./scripts/deploy-local.ps1    # Windows
+
+# 3. Add to /etc/hosts (get IP from minikube ip)
+<minikube-ip> todo.local
+
+# 4. Access the app
+http://todo.local
+```
+
+### Kubernetes Architecture
+
+```
+┌─────────────────────────────────────────┐
+│            MINIKUBE CLUSTER             │
+│                                         │
+│  ┌─────────────────────────────────┐   │
+│  │      NGINX Ingress (todo.local) │   │
+│  └──────────────┬──────────────────┘   │
+│          ┌──────┴──────┐               │
+│          ▼             ▼               │
+│   ┌───────────┐ ┌───────────┐         │
+│   │ Frontend  │ │  Backend  │         │
+│   │ (Next.js) │ │ (FastAPI) │         │
+│   │ x2 pods   │ │ x2 pods   │         │
+│   └───────────┘ └─────┬─────┘         │
+│                       │                │
+└───────────────────────┼────────────────┘
+                        ▼
+              ┌─────────────────┐
+              │ Neon PostgreSQL │
+              │   (External)    │
+              └─────────────────┘
+```
+
+### Helm Commands
+
+```bash
+# Install
+helm install todo-app ./helm/todo-app
+
+# Upgrade with custom values
+helm upgrade todo-app ./helm/todo-app --set backend.replicas=3
+
+# Uninstall
+helm uninstall todo-app
+```
+
+### AI-Ops Integration
+
+Use natural language to manage the cluster with kubectl-ai:
+
+```bash
+# Install kubectl-ai
+kubectl krew install ai
+
+# Example commands
+kubectl ai "show all pods"
+kubectl ai "scale backend to 3 replicas"
+kubectl ai "get backend logs"
+kubectl ai "why is pod failing?"
+```
+
+See [docs/ai-ops.md](./docs/ai-ops.md) for full AI-Ops guide.
+
+### Documentation
+
+| Document | Description |
+|----------|-------------|
+| [docs/deployment.md](./docs/deployment.md) | Full deployment guide |
+| [docs/ai-ops.md](./docs/ai-ops.md) | AI-Ops integration guide |
+| [docs/troubleshooting.md](./docs/troubleshooting.md) | Common issues & solutions |
+
+---
+
+## Cloud Deployment
 
 ### Backend (Render/Railway)
 1. Connect GitHub repository
