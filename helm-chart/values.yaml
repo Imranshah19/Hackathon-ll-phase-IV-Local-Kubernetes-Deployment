@@ -1,0 +1,9 @@
+frontend:
+  replicas: 2
+  image: todo-frontend:phase4
+  port: 3000
+
+backend:
+  replicas: 2
+  image: todo-backend:phase4
+  port: 8000
