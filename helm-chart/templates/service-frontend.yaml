@@ -6,6 +6,6 @@ spec:
   selector:
     app: todo-frontend
   ports:
-    - port: {{ .Values.frontend.port }}
-      targetPort: {{ .Values.frontend.port }}
+    - port: 3000
+      targetPort: 3000
   type: ClusterIP
