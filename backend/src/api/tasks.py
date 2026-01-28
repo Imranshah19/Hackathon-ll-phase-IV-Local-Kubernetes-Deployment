@@ -24,7 +24,7 @@ from enum import Enum
 from typing import Literal, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlmodel import select
 
@@ -42,6 +42,7 @@ from src.models.recurrence import (
 )
 from src.services.tag_service import TagService
 from src.services.recurrence_service import RecurrenceService
+from src.services.task_event_service import TaskEventService
 
 
 # =============================================================================
@@ -264,6 +265,7 @@ async def create_task(
     task_data: TaskCreateWithTags,
     session: DbSession,
     user_id: CurrentUserId,
+    background_tasks: BackgroundTasks,
 ) -> TaskPublic:
     """
     Create a new task for the current user.
@@ -271,6 +273,7 @@ async def create_task(
     The user_id is automatically set from the JWT token.
 
     Phase 5: Supports priority (1-5), due date, tag_ids, and recurrence fields.
+    Phase 5 US7: Publishes TaskCreated event via Dapr pub/sub.
     """
     recurrence_rule_id = None
 
@@ -313,6 +316,11 @@ async def create_task(
         set_task_tags(session, task.id, user_id, task_data.tag_ids)
         session.commit()
 
+    # Publish TaskCreated event (Phase 5 - US7)
+    tags = get_task_tags(session, task.id)
+    event_service = TaskEventService(session, user_id)
+    background_tasks.add_task(event_service.publish_task_created, task, tags)
+
     return task_to_public(session, task)
 
 
@@ -346,6 +354,7 @@ async def update_task(
     task_data: TaskUpdateWithTags,
     session: DbSession,
     user_id: CurrentUserId,
+    background_tasks: BackgroundTasks,
 ) -> TaskPublic:
     """
     Partially update a task.
@@ -355,6 +364,7 @@ async def update_task(
 
     Phase 5: Supports updating tag_ids (replaces all existing tag associations).
     Phase 5 US4: If update_series=true, updates all future instances of recurring task.
+    Phase 5 US7: Publishes TaskUpdated event via Dapr pub/sub.
     """
     task = get_user_task(session, task_id, user_id)
 
@@ -386,6 +396,11 @@ async def update_task(
     session.commit()
     session.refresh(task)
 
+    # Publish TaskUpdated event (Phase 5 - US7)
+    tags = get_task_tags(session, task.id)
+    event_service = TaskEventService(session, user_id)
+    background_tasks.add_task(event_service.publish_task_updated, task, tags)
+
     return task_to_public(session, task)
 
 
@@ -398,6 +413,7 @@ async def delete_task(
     task_id: UUID,
     session: DbSession,
     user_id: CurrentUserId,
+    background_tasks: BackgroundTasks,
     delete_series: bool = Query(default=False),
 ) -> None:
     """
@@ -407,8 +423,20 @@ async def delete_task(
     Returns 204 No Content on success.
 
     Phase 5 US4: If delete_series=true, deletes all future instances of recurring task.
+    Phase 5 US7: Publishes TaskDeleted event via Dapr pub/sub.
     """
     task = get_user_task(session, task_id, user_id)
+
+    # Store task info for event before deletion
+    task_copy = Task(
+        id=task.id,
+        user_id=task.user_id,
+        title=task.title,
+        description=task.description,
+        is_completed=task.is_completed,
+        priority=task.priority,
+        due=task.due,
+    )
 
     # Delete series if requested (Phase 5 - US4)
     if delete_series and task.recurrence_rule_id:
@@ -426,6 +454,10 @@ async def delete_task(
 
     session.commit()
 
+    # Publish TaskDeleted event (Phase 5 - US7)
+    event_service = TaskEventService(session, user_id)
+    background_tasks.add_task(event_service.publish_task_deleted, task_copy, delete_series)
+
 
 @router.post(
     "/{task_id}/complete",
@@ -436,11 +468,13 @@ async def complete_task(
     task_id: UUID,
     session: DbSession,
     user_id: CurrentUserId,
+    background_tasks: BackgroundTasks,
 ) -> TaskCompleteResponse:
     """
     Mark a task as completed.
 
     Phase 5 US4: If the task is recurring, automatically creates the next instance.
+    Phase 5 US7: Publishes TaskCompleted event via Dapr pub/sub.
 
     Returns:
         TaskCompleteResponse with completed task and next_instance (if recurring)
@@ -455,6 +489,7 @@ async def complete_task(
     session.refresh(task)
 
     next_instance = None
+    next_task_id = None
 
     # Create next instance if recurring (Phase 5 - US4)
     if task.recurrence_rule_id:
@@ -464,6 +499,7 @@ async def complete_task(
         if rule:
             next_task = recurrence_service.create_next_instance(task, rule)
             if next_task:
+                next_task_id = next_task.id
                 # Copy tags to next instance
                 original_tags = get_task_tags(session, task.id)
                 if original_tags:
@@ -474,6 +510,16 @@ async def complete_task(
                     session.commit()
 
                 next_instance = task_to_public(session, next_task)
+
+    # Publish TaskCompleted event (Phase 5 - US7)
+    tags = get_task_tags(session, task.id)
+    event_service = TaskEventService(session, user_id)
+    background_tasks.add_task(
+        event_service.publish_task_completed,
+        task,
+        tags,
+        next_task_id,
+    )
 
     return TaskCompleteResponse(
         task=task_to_public(session, task),

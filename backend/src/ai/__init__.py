@@ -10,6 +10,7 @@ Components:
 - executor: Bridge to Bonsai CLI service layer
 - fallback: Confidence-based fallback to CLI commands
 - types: Data types for interpreted commands
+- urdu: Bilingual support for Urdu language (Phase 5 - US6)
 
 Architecture:
     User Message -> Interpreter -> InterpretedCommand -> Executor -> Response
@@ -25,6 +26,15 @@ from src.ai.types import InterpretedCommand, CommandAction, ConfidenceLevel, Sta
 from src.ai.interpreter import AIInterpreter, get_interpreter
 from src.ai.executor import CommandExecutor, ExecutionResult
 from src.ai.fallback import FallbackHandler, FallbackResponse, get_fallback_handler
+from src.ai.urdu import (
+    Language,
+    LanguageDetectionResult,
+    detect_language,
+    match_urdu_command,
+    get_response,
+    URDU_RESPONSES,
+    ENGLISH_RESPONSES,
+)
 
 __all__ = [
     # Types
@@ -42,4 +52,12 @@ __all__ = [
     "FallbackHandler",
     "FallbackResponse",
     "get_fallback_handler",
+    # Urdu support (Phase 5 - US6)
+    "Language",
+    "LanguageDetectionResult",
+    "detect_language",
+    "match_urdu_command",
+    "get_response",
+    "URDU_RESPONSES",
+    "ENGLISH_RESPONSES",
 ]

@@ -21,9 +21,9 @@ from typing import Any
 # System Prompt
 # =============================================================================
 
-INTENT_EXTRACTION_SYSTEM_PROMPT = """You are a task management assistant that interprets natural language commands and converts them to structured task operations.
+INTENT_EXTRACTION_SYSTEM_PROMPT = """You are a bilingual (English/Urdu) task management assistant that interprets natural language commands and converts them to structured task operations.
 
-Your job is to understand what the user wants to do with their tasks and extract the relevant information.
+Your job is to understand what the user wants to do with their tasks and extract the relevant information. You MUST detect the input language and respond accordingly.
 
 Available operations:
 1. ADD - Create a new task (requires: title, optional: due_date)
@@ -38,14 +38,38 @@ Rules:
 - If the user's intent is unclear, set needs_clarification to true
 - If multiple tasks might match a description (e.g., "the grocery task"), note this
 - Be conservative - if unsure, ask for clarification rather than guessing
+- Detect the input language (English or Urdu) and set detected_language field
 
-Examples:
+URDU LANGUAGE SUPPORT (اردو):
+Map these Urdu command patterns to actions:
+- نیا کام / کام شامل کرو / شامل کرو / بناؤ → ADD (create new task)
+- دکھاؤ / میرے کام / فہرست / کام دکھاؤ → LIST (show tasks)
+- مکمل / ہو گیا / ختم / کر لیا → COMPLETE (mark as done)
+- حذف / مٹا دو / ہٹاؤ / نکالو → DELETE (remove task)
+- تبدیل / بدلو / ترمیم / درست کرو → UPDATE (modify task)
+
+Urdu time words:
+- آج → today
+- کل → tomorrow
+- اگلے ہفتے → next week
+- ابھی → now
+
+Urdu priority words:
+- فوری / اہم / ضروری → Critical (1)
+- اعلی / زیادہ → High (2)
+- درمیانی → Medium (3)
+- کم → Low (4)
+
+Examples (English):
 - "Add a task to buy groceries tomorrow" → ADD, title="buy groceries", due_date=tomorrow
 - "Show my pending tasks" → LIST, status_filter=pending
 - "Mark task 3 as done" → COMPLETE, task_id=3
-- "Delete the meeting task" → DELETE, task_reference="meeting" (may need clarification if multiple)
-- "Update task 1 to 'call mom tonight'" → UPDATE, task_id=1, new_title="call mom tonight"
-- "Add something" → ADD, needs_clarification=true (title not specified)
+
+Examples (Urdu):
+- "نیا کام شامل کرو: دودھ خریدنا" → ADD, title="دودھ خریدنا", detected_language=ur
+- "میرے کام دکھاؤ" → LIST, status_filter=all, detected_language=ur
+- "پہلا کام مکمل" → COMPLETE, task_id=1, detected_language=ur
+- "کل تک فوری کام بناؤ" → ADD, due_date=tomorrow, priority=1, detected_language=ur
 """
 
 # =============================================================================
@@ -54,7 +78,7 @@ Examples:
 
 INTENT_EXTRACTION_FUNCTION: dict[str, Any] = {
     "name": "extract_task_intent",
-    "description": "Extract the user's intent from a natural language task management command",
+    "description": "Extract the user's intent from a natural language task management command (supports English and Urdu)",
     "parameters": {
         "type": "object",
         "properties": {
@@ -69,13 +93,18 @@ INTENT_EXTRACTION_FUNCTION: dict[str, Any] = {
                 "maximum": 1.0,
                 "description": "Confidence score for the interpretation (0.0-1.0)",
             },
+            "detected_language": {
+                "type": "string",
+                "enum": ["en", "ur"],
+                "description": "Detected input language: 'en' for English, 'ur' for Urdu",
+            },
             "title": {
                 "type": "string",
-                "description": "Task title for add/update operations (only if explicitly stated)",
+                "description": "Task title for add/update operations (only if explicitly stated, preserve original language)",
             },
             "task_id": {
                 "type": "integer",
-                "description": "Numeric task ID if the user specified one (e.g., 'task 3')",
+                "description": "Numeric task ID if the user specified one (e.g., 'task 3' or 'پہلا کام')",
             },
             "task_reference": {
                 "type": "string",
@@ -83,7 +112,13 @@ INTENT_EXTRACTION_FUNCTION: dict[str, Any] = {
             },
             "due_date": {
                 "type": "string",
-                "description": "Due date in natural language (e.g., 'tomorrow', 'next Monday')",
+                "description": "Due date in natural language (e.g., 'tomorrow', 'کل')",
+            },
+            "priority": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5,
+                "description": "Priority level if specified: 1=Critical, 2=High, 3=Medium, 4=Low, 5=None",
             },
             "status_filter": {
                 "type": "string",
@@ -96,10 +131,10 @@ INTENT_EXTRACTION_FUNCTION: dict[str, Any] = {
             },
             "clarification_question": {
                 "type": "string",
-                "description": "Question to ask the user if clarification is needed",
+                "description": "Question to ask the user if clarification is needed (in the detected language)",
             },
         },
-        "required": ["action", "confidence"],
+        "required": ["action", "confidence", "detected_language"],
     },
 }
 
