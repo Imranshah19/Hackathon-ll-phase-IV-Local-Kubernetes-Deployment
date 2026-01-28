@@ -1,0 +1,4 @@
+# Dapr component configurations for Phase 5
+# Components to be added:
+# - pubsub.yaml (Kafka via Dapr)
+# - statestore.yaml (optional, for distributed state)

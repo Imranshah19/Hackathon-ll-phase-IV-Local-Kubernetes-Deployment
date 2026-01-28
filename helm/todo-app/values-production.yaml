@@ -1,0 +1,259 @@
+# =============================================================================
+# Todo App Helm Chart - Production Values (DigitalOcean Kubernetes)
+# =============================================================================
+# Production configuration for DOKS deployment
+# Usage: helm upgrade --install todo-app ./helm/todo-app -f helm/todo-app/values-production.yaml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global Settings
+# -----------------------------------------------------------------------------
+nameOverride: ""
+fullnameOverride: "todo-app"
+
+# -----------------------------------------------------------------------------
+# Image Pull Secrets (DigitalOcean Container Registry)
+# -----------------------------------------------------------------------------
+imagePullSecrets:
+  - name: docr-secret
+
+# -----------------------------------------------------------------------------
+# Backend Configuration
+# -----------------------------------------------------------------------------
+backend:
+  enabled: true
+
+  # DigitalOcean Container Registry
+  image:
+    repository: registry.digitalocean.com/todo-app-registry/todo-backend
+    tag: latest
+    pullPolicy: Always
+
+  # Production replicas
+  replicas: 3
+
+  # Production resource limits
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8000
+
+  # Health probes (adjusted for production)
+  livenessProbe:
+    httpGet:
+      path: /health/live
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 10
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health/ready
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # Dapr sidecar annotations (Phase 5 - US7)
+  podAnnotations:
+    dapr.io/enabled: "true"
+    dapr.io/app-id: "todo-backend"
+    dapr.io/app-port: "8000"
+    dapr.io/enable-api-logging: "true"
+    dapr.io/log-level: "info"
+
+  # Pod anti-affinity for high availability
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - backend
+            topologyKey: kubernetes.io/hostname
+
+# -----------------------------------------------------------------------------
+# Frontend Configuration
+# -----------------------------------------------------------------------------
+frontend:
+  enabled: true
+
+  # DigitalOcean Container Registry
+  image:
+    repository: registry.digitalocean.com/todo-app-registry/todo-frontend
+    tag: latest
+    pullPolicy: Always
+
+  # Production replicas
+  replicas: 2
+
+  # Production resource limits
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 3000
+
+  # Health probes
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 10
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # Pod annotations
+  podAnnotations: {}
+
+  # Pod anti-affinity for high availability
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - frontend
+            topologyKey: kubernetes.io/hostname
+
+# -----------------------------------------------------------------------------
+# Ingress Configuration (DigitalOcean Load Balancer)
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: true
+  className: nginx
+  # Replace with your actual domain
+  host: todo.example.com
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    # SSL redirect
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+    # Cert-manager for automatic TLS
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  tls:
+    - secretName: todo-app-tls
+      hosts:
+        - todo.example.com
+
+# -----------------------------------------------------------------------------
+# ConfigMap Configuration
+# -----------------------------------------------------------------------------
+config:
+  logLevel: INFO
+  environment: production
+  apiVersion: v1
+  # AI Configuration
+  openaiModel: gpt-4o-mini
+  agentName: todo-assistant
+  # Backend base URL (internal service)
+  baseUrl: http://todo-app-backend:8000
+
+# -----------------------------------------------------------------------------
+# Secrets Configuration
+# -----------------------------------------------------------------------------
+# WARNING: These should be provided via CI/CD secrets or external secrets manager
+# Do NOT commit actual values to version control
+secrets:
+  # Neon PostgreSQL connection string
+  neonDbUrl: ""  # Set via --set secrets.neonDbUrl=$NEON_DB_URL
+  # OpenAI API Key
+  openaiApiKey: ""  # Set via --set secrets.openaiApiKey=$OPENAI_API_KEY
+  # Next.js domain key
+  nextDomainKey: ""  # Set via --set secrets.nextDomainKey=$NEXT_DOMAIN_KEY
+  # Auth secret (min 32 characters)
+  authSecret: ""  # Set via --set secrets.authSecret=$AUTH_SECRET
+
+# -----------------------------------------------------------------------------
+# Horizontal Pod Autoscaler (HPA) - Enabled for Production
+# -----------------------------------------------------------------------------
+autoscaling:
+  enabled: true
+  # Backend HPA
+  backend:
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  # Frontend HPA
+  frontend:
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# -----------------------------------------------------------------------------
+# Service Account
+# -----------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  name: "todo-app-sa"
+  annotations:
+    # Add any cloud provider specific annotations here
+    # e.g., for workload identity
+
+# -----------------------------------------------------------------------------
+# Dapr Configuration (Phase 5 - US7)
+# -----------------------------------------------------------------------------
+dapr:
+  enabled: true
+  # Pub/Sub component name
+  pubsubName: "todo-pubsub"
+  # Topic for task events
+  taskEventsTopic: "task-events"
+
+# -----------------------------------------------------------------------------
+# Monitoring (Phase 5 - Observability)
+# -----------------------------------------------------------------------------
+monitoring:
+  # Prometheus metrics
+  metrics:
+    enabled: true
+    path: /metrics
+    port: 8000
+  # ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s

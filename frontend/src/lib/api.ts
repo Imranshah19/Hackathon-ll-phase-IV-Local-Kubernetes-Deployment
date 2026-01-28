@@ -49,8 +49,44 @@ export interface Task {
   title: string;
   description: string | null;
   is_completed: boolean;
+  priority: number; // 1=Critical, 2=High, 3=Medium, 4=Low, 5=None
+  due: string | null;
+  tags: string[];
+  recurrence_rule_id: string | null;
+  parent_task_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// Priority configuration
+export const PRIORITY_CONFIG = {
+  1: { label: "Critical", color: "#EF4444", bgColor: "bg-red-100", textColor: "text-red-700" },
+  2: { label: "High", color: "#F97316", bgColor: "bg-orange-100", textColor: "text-orange-700" },
+  3: { label: "Medium", color: "#EAB308", bgColor: "bg-yellow-100", textColor: "text-yellow-700" },
+  4: { label: "Low", color: "#22C55E", bgColor: "bg-green-100", textColor: "text-green-700" },
+  5: { label: "None", color: "#6B7280", bgColor: "bg-gray-100", textColor: "text-gray-700" },
+} as const;
+
+export type PriorityLevel = keyof typeof PRIORITY_CONFIG;
+
+// Tag types (Phase 5 - US2)
+export interface Tag {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+  task_count: number;
+}
+
+export interface TagCreateRequest {
+  name: string;
+  color?: string;
+}
+
+export interface TagUpdateRequest {
+  name?: string;
+  color?: string;
 }
 
 export interface LoginRequest {
@@ -63,16 +99,54 @@ export interface RegisterRequest {
   password: string;
 }
 
+// Recurrence types (Phase 5 - US4)
+export type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
+export type RecurrenceEndType = "never" | "count" | "date";
+
+export interface RecurrenceInput {
+  frequency: RecurrenceFrequency;
+  interval?: number;
+  end_type?: RecurrenceEndType;
+  end_count?: number;
+  end_date?: string; // ISO date string
+}
+
 export interface TaskCreateRequest {
   title: string;
   description?: string;
   is_completed?: boolean;
+  priority?: number;
+  due?: string;
+  tag_ids?: string[];
+  recurrence?: RecurrenceInput; // Phase 5 - US4
 }
 
 export interface TaskUpdateRequest {
   title?: string;
   description?: string;
   is_completed?: boolean;
+  priority?: number;
+  due?: string;
+  tag_ids?: string[];
+  update_series?: boolean; // Phase 5 - US4
+}
+
+// Complete task response (Phase 5 - US4)
+export interface TaskCompleteResponse {
+  task: Task;
+  next_instance: Task | null;
+}
+
+// Task filter options
+export interface TaskFilterOptions {
+  completed?: boolean;
+  search?: string;
+  priority?: number[];
+  due_from?: string;
+  due_to?: string;
+  tags?: string[];
+  sort_by?: "created_at" | "updated_at" | "priority" | "due" | "title";
+  sort_order?: "asc" | "desc";
 }
 
 export interface TokenResponse {
@@ -248,13 +322,35 @@ class ApiClient {
   // Task Endpoints
   // ---------------------------------------------------------------------------
 
-  async getTasks(options?: { completed?: boolean; search?: string }): Promise<Task[]> {
+  async getTasks(options?: TaskFilterOptions): Promise<Task[]> {
     const params = new URLSearchParams();
     if (options?.completed !== undefined) {
       params.append("completed", String(options.completed));
     }
     if (options?.search) {
       params.append("search", options.search);
+    }
+    // Phase 5: Priority filter
+    if (options?.priority && options.priority.length > 0) {
+      options.priority.forEach((p) => params.append("priority", String(p)));
+    }
+    // Phase 5: Due date filters
+    if (options?.due_from) {
+      params.append("due_from", options.due_from);
+    }
+    if (options?.due_to) {
+      params.append("due_to", options.due_to);
+    }
+    // Phase 5: Tags filter
+    if (options?.tags && options.tags.length > 0) {
+      options.tags.forEach((t) => params.append("tags", t));
+    }
+    // Phase 5: Sorting
+    if (options?.sort_by) {
+      params.append("sort_by", options.sort_by);
+    }
+    if (options?.sort_order) {
+      params.append("sort_order", options.sort_order);
     }
     const queryString = params.toString();
     return this.request<Task[]>(`/api/tasks${queryString ? `?${queryString}` : ""}`);
@@ -278,10 +374,59 @@ class ApiClient {
     });
   }
 
-  async deleteTask(id: string): Promise<void> {
-    return this.request<void>(`/api/tasks/${id}`, {
+  async deleteTask(id: string, deleteSeries?: boolean): Promise<void> {
+    const params = new URLSearchParams();
+    if (deleteSeries) {
+      params.append("delete_series", "true");
+    }
+    const queryString = params.toString();
+    return this.request<void>(`/api/tasks/${id}${queryString ? `?${queryString}` : ""}`, {
       method: "DELETE",
     });
+  }
+
+  // Phase 5 - US4: Complete task with recurrence support
+  async completeTask(id: string): Promise<TaskCompleteResponse> {
+    return this.request<TaskCompleteResponse>(`/api/tasks/${id}/complete`, {
+      method: "POST",
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tag Endpoints (Phase 5)
+  // ---------------------------------------------------------------------------
+
+  async getTags(): Promise<Tag[]> {
+    return this.request<Tag[]>("/api/tags");
+  }
+
+  async createTag(data: TagCreateRequest): Promise<Tag> {
+    return this.request<Tag>("/api/tags", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTag(id: string, data: TagUpdateRequest): Promise<Tag> {
+    return this.request<Tag>(`/api/tags/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTag(id: string): Promise<void> {
+    return this.request<void>(`/api/tags/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async suggestTags(prefix: string = ""): Promise<string[]> {
+    const params = new URLSearchParams();
+    if (prefix) {
+      params.append("prefix", prefix);
+    }
+    const queryString = params.toString();
+    return this.request<string[]>(`/api/tags/suggest${queryString ? `?${queryString}` : ""}`);
   }
 
   // ---------------------------------------------------------------------------

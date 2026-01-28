@@ -1,0 +1,678 @@
+openapi: 3.1.0
+info:
+  title: Todo App Phase 5 API
+  description: Advanced task management with priorities, tags, recurring tasks, reminders, and bilingual support
+  version: 5.0.0
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ============ TASKS (Extended) ============
+  /tasks:
+    get:
+      summary: List tasks with advanced filtering
+      operationId: listTasks
+      tags: [Tasks]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, all]
+            default: all
+        - name: priority
+          in: query
+          description: Filter by priority (1-5) or range (1-2 for high priority)
+          schema:
+            type: string
+            example: "1-2"
+        - name: tags
+          in: query
+          description: Comma-separated tag IDs
+          schema:
+            type: string
+        - name: due_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: due_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: search
+          in: query
+          description: Search in title and description
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [due, priority, title, created_at]
+            default: created_at
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Tasks list with pagination
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskListResponse'
+
+    post:
+      summary: Create task with priority, tags, recurrence
+      operationId: createTask
+      tags: [Tasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /tasks/{task_id}:
+    get:
+      summary: Get task details
+      operationId: getTask
+      tags: [Tasks]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    patch:
+      summary: Update task
+      operationId: updateTask
+      tags: [Tasks]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+    delete:
+      summary: Delete task
+      operationId: deleteTask
+      tags: [Tasks]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - name: delete_series
+          in: query
+          description: If true, delete all future recurring instances
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '204':
+          description: Task deleted
+
+  /tasks/{task_id}/complete:
+    post:
+      summary: Mark task as complete
+      operationId: completeTask
+      tags: [Tasks]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task completed (includes next instance if recurring)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteTaskResponse'
+
+  # ============ TAGS ============
+  /tags:
+    get:
+      summary: List user tags with task counts
+      operationId: listTags
+      tags: [Tags]
+      responses:
+        '200':
+          description: Tags list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TagWithCount'
+
+    post:
+      summary: Create tag
+      operationId: createTag
+      tags: [Tags]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagRequest'
+      responses:
+        '201':
+          description: Tag created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+
+  /tags/{tag_id}:
+    patch:
+      summary: Update tag
+      operationId: updateTag
+      tags: [Tags]
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTagRequest'
+      responses:
+        '200':
+          description: Tag updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+
+    delete:
+      summary: Delete tag (removes from all tasks)
+      operationId: deleteTag
+      tags: [Tags]
+      parameters:
+        - $ref: '#/components/parameters/TagId'
+      responses:
+        '204':
+          description: Tag deleted
+
+  /tags/suggest:
+    get:
+      summary: Suggest tags based on prefix
+      operationId: suggestTags
+      tags: [Tags]
+      parameters:
+        - name: prefix
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        '200':
+          description: Matching tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+
+  # ============ REMINDERS ============
+  /tasks/{task_id}/reminders:
+    get:
+      summary: List reminders for task
+      operationId: listReminders
+      tags: [Reminders]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Reminders list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reminder'
+
+    post:
+      summary: Add reminder to task
+      operationId: createReminder
+      tags: [Reminders]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReminderRequest'
+      responses:
+        '201':
+          description: Reminder created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reminder'
+        '400':
+          description: Maximum reminders reached (3) or invalid time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /reminders/{reminder_id}:
+    delete:
+      summary: Delete reminder
+      operationId: deleteReminder
+      tags: [Reminders]
+      parameters:
+        - $ref: '#/components/parameters/ReminderId'
+      responses:
+        '204':
+          description: Reminder deleted
+
+  /reminders/stream:
+    get:
+      summary: SSE stream for reminder notifications
+      operationId: reminderStream
+      tags: [Reminders]
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  # ============ CHAT (Extended for Urdu) ============
+  /chat:
+    post:
+      summary: Send message (English or Urdu)
+      operationId: sendChatMessage
+      tags: [Chat]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+
+  # ============ METRICS ============
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      operationId: getMetrics
+      tags: [Observability]
+      security: []
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    TagId:
+      name: tag_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    ReminderId:
+      name: reminder_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Task:
+      type: object
+      required: [id, title, status, priority, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, completed]
+        due:
+          type: string
+          format: date-time
+          nullable: true
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: "1=Critical, 2=High, 3=Medium, 4=Low, 5=None"
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        recurrence:
+          $ref: '#/components/schemas/RecurrenceRule'
+          nullable: true
+        parent_task_id:
+          type: string
+          format: uuid
+          nullable: true
+        reminders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reminder'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateTaskRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        due:
+          type: string
+          format: date-time
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+          default: 3
+        tag_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        recurrence:
+          $ref: '#/components/schemas/CreateRecurrenceRequest'
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        due:
+          type: string
+          format: date-time
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 5
+        tag_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        update_series:
+          type: boolean
+          default: false
+          description: If true, update all future recurring instances
+
+    TaskListResponse:
+      type: object
+      required: [tasks, total, limit, offset]
+      properties:
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    CompleteTaskResponse:
+      type: object
+      required: [completed_task]
+      properties:
+        completed_task:
+          $ref: '#/components/schemas/Task'
+        next_instance:
+          $ref: '#/components/schemas/Task'
+          nullable: true
+          description: Next recurring instance if applicable
+
+    Tag:
+      type: object
+      required: [id, name, color]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 50
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+
+    TagWithCount:
+      allOf:
+        - $ref: '#/components/schemas/Tag'
+        - type: object
+          required: [task_count]
+          properties:
+            task_count:
+              type: integer
+
+    CreateTagRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_-]+$'
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          default: '#6B7280'
+
+    UpdateTagRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9_-]+$'
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+
+    RecurrenceRule:
+      type: object
+      required: [id, frequency, interval, end_type]
+      properties:
+        id:
+          type: string
+          format: uuid
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly, yearly, custom]
+        interval:
+          type: integer
+          minimum: 1
+          default: 1
+        end_type:
+          type: string
+          enum: [never, count, date]
+        end_count:
+          type: integer
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+
+    CreateRecurrenceRequest:
+      type: object
+      required: [frequency]
+      properties:
+        frequency:
+          type: string
+          enum: [daily, weekly, monthly, yearly, custom]
+        interval:
+          type: integer
+          minimum: 1
+          default: 1
+        end_type:
+          type: string
+          enum: [never, count, date]
+          default: never
+        end_count:
+          type: integer
+          minimum: 1
+        end_date:
+          type: string
+          format: date
+
+    Reminder:
+      type: object
+      required: [id, remind_at, sent]
+      properties:
+        id:
+          type: string
+          format: uuid
+        remind_at:
+          type: string
+          format: date-time
+        message:
+          type: string
+          nullable: true
+        sent:
+          type: boolean
+        sent_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateReminderRequest:
+      type: object
+      required: [remind_at]
+      properties:
+        remind_at:
+          type: string
+          format: date-time
+        message:
+          type: string
+
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: User message in English or Urdu
+        conversation_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    ChatResponse:
+      type: object
+      required: [response, language, conversation_id]
+      properties:
+        response:
+          type: string
+          description: Assistant response in detected language
+        language:
+          type: string
+          enum: [english, urdu]
+        conversation_id:
+          type: string
+          format: uuid
+        generated_command:
+          type: string
+          nullable: true
+          description: Bonsai CLI command if action was taken
+
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object

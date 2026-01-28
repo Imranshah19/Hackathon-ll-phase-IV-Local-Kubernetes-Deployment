@@ -18,6 +18,12 @@ Implements requirements:
 - FR-010: Description validation (max 4000 chars)
 - FR-012: CASCADE DELETE on User->Task relationship
 - FR-014: description nullable with default None
+
+Phase 5 additions:
+- FR-001: Priority field (1=Critical to 5=None, default=3)
+- FR-013: Recurrence support via recurrence_rule_id FK
+- FR-015: Due date field for scheduling
+- Parent task tracking for recurring instances
 """
 
 from datetime import datetime
@@ -29,6 +35,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from src.models.base import utc_now
 
 if TYPE_CHECKING:
+    from src.models.reminder import Reminder
     from src.models.user import User
 
 
@@ -60,6 +67,19 @@ class TaskBase(SQLModel):
         description="Task completion status",
     )
 
+    # Phase 5: Priority Management
+    priority: int = Field(
+        default=3,
+        ge=1,
+        le=5,
+        description="Priority level: 1=Critical, 2=High, 3=Medium, 4=Low, 5=None",
+    )
+
+    due: datetime | None = Field(
+        default=None,
+        description="Task due date/time (UTC)",
+    )
+
 
 # =============================================================================
 # Database Table Model
@@ -71,6 +91,12 @@ class Task(TaskBase, table=True):
 
     Represents a todo item owned by a user.
     Contains title, description, completion status, and audit fields.
+
+    Phase 5 additions:
+    - priority: 1-5 scale for task importance
+    - due: optional due date/time
+    - recurrence_rule_id: FK to recurrence pattern
+    - parent_task_id: self-FK for recurring instances
     """
 
     __tablename__ = "tasks"
@@ -98,8 +124,29 @@ class Task(TaskBase, table=True):
         description="Last update timestamp (UTC)",
     )
 
+    # Phase 5: Recurring task support
+    recurrence_rule_id: UUID | None = Field(
+        default=None,
+        foreign_key="recurrence_rules.id",
+        nullable=True,
+        description="FK to recurrence pattern (null for non-recurring tasks)",
+    )
+
+    parent_task_id: UUID | None = Field(
+        default=None,
+        foreign_key="tasks.id",
+        nullable=True,
+        description="Parent task ID for recurring instances",
+    )
+
     # Relationship back to User
     user: "User" = Relationship(back_populates="tasks")
+
+    # Phase 5: Reminders relationship
+    reminders: list["Reminder"] = Relationship(
+        back_populates="task",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
 
 
 # =============================================================================
@@ -143,6 +190,19 @@ class TaskUpdate(SQLModel):
         description="Updated completion status",
     )
 
+    # Phase 5: Priority and due date updates
+    priority: int | None = Field(
+        default=None,
+        ge=1,
+        le=5,
+        description="Updated priority level",
+    )
+
+    due: datetime | None = Field(
+        default=None,
+        description="Updated due date/time",
+    )
+
 
 # =============================================================================
 # API Output Schema
@@ -159,6 +219,22 @@ class TaskPublic(TaskBase):
     user_id: UUID = Field(description="Owner user identifier")
     created_at: datetime = Field(description="Task creation timestamp (UTC)")
     updated_at: datetime = Field(description="Last update timestamp (UTC)")
+
+    # Phase 5: Recurring task references
+    recurrence_rule_id: UUID | None = Field(
+        default=None,
+        description="Recurrence pattern ID (null if not recurring)",
+    )
+    parent_task_id: UUID | None = Field(
+        default=None,
+        description="Parent task ID for recurring instances",
+    )
+
+    # Tags will be populated from relationship
+    tags: list[str] = Field(
+        default_factory=list,
+        description="Tag names associated with this task",
+    )
 
     model_config = {"from_attributes": True}
 

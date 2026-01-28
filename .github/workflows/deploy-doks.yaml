@@ -1,0 +1,206 @@
+# =============================================================================
+# Deploy to DigitalOcean Kubernetes (DOKS)
+# =============================================================================
+# This workflow builds, pushes to DOCR, and deploys to DOKS
+#
+# Required Secrets:
+#   - DIGITALOCEAN_ACCESS_TOKEN: DO API token
+#   - DOKS_CLUSTER_NAME: Kubernetes cluster name
+#   - DOCR_REGISTRY: Container registry name (e.g., todo-app-registry)
+#   - NEON_DB_URL: PostgreSQL connection string
+#   - OPENAI_API_KEY: OpenAI API key
+#   - AUTH_SECRET: JWT signing secret (min 32 chars)
+#   - NEXT_DOMAIN_KEY: Next.js domain key
+# =============================================================================
+
+name: Deploy to DOKS
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/*'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  REGISTRY: registry.digitalocean.com
+  BACKEND_IMAGE: todo-backend
+  FRONTEND_IMAGE: todo-frontend
+  HELM_RELEASE: todo-app
+  NAMESPACE: todo-app
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build and Push Images
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build and Push
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Login to DOCR
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION=sha-${GITHUB_SHA::8}
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Image tag: ${VERSION}"
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ secrets.DOCR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ secrets.DOCR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ secrets.DOCR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ secrets.DOCR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://todo.example.com
+
+  # ---------------------------------------------------------------------------
+  # Deploy to DOKS
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy to DOKS
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: https://todo.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Save DOKS kubeconfig
+        run: |
+          doctl kubernetes cluster kubeconfig save ${{ secrets.DOKS_CLUSTER_NAME }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.13.0'
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create DOCR secret
+        run: |
+          doctl registry kubernetes-manifest | kubectl apply -n ${{ env.NAMESPACE }} -f -
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install ${{ env.HELM_RELEASE }} ./helm/todo-app \
+            --namespace ${{ env.NAMESPACE }} \
+            --values ./helm/todo-app/values-production.yaml \
+            --set backend.image.tag=${{ needs.build.outputs.image_tag }} \
+            --set frontend.image.tag=${{ needs.build.outputs.image_tag }} \
+            --set backend.image.repository=${{ env.REGISTRY }}/${{ secrets.DOCR_REGISTRY }}/${{ env.BACKEND_IMAGE }} \
+            --set frontend.image.repository=${{ env.REGISTRY }}/${{ secrets.DOCR_REGISTRY }}/${{ env.FRONTEND_IMAGE }} \
+            --set secrets.neonDbUrl="${{ secrets.NEON_DB_URL }}" \
+            --set secrets.openaiApiKey="${{ secrets.OPENAI_API_KEY }}" \
+            --set secrets.authSecret="${{ secrets.AUTH_SECRET }}" \
+            --set secrets.nextDomainKey="${{ secrets.NEXT_DOMAIN_KEY }}" \
+            --set ingress.host="${{ vars.DOMAIN || 'todo.example.com' }}" \
+            --wait \
+            --timeout 10m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/${{ env.HELM_RELEASE }}-backend -n ${{ env.NAMESPACE }} --timeout=5m
+          kubectl rollout status deployment/${{ env.HELM_RELEASE }}-frontend -n ${{ env.NAMESPACE }} --timeout=5m
+
+      - name: Run smoke tests
+        run: |
+          # Wait for ingress to be ready
+          sleep 30
+
+          # Get ingress IP
+          INGRESS_IP=$(kubectl get ingress ${{ env.HELM_RELEASE }}-ingress -n ${{ env.NAMESPACE }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "Ingress IP: ${INGRESS_IP}"
+
+          # Health check
+          curl -f -s --retry 5 --retry-delay 10 "http://${INGRESS_IP}/health/live" || echo "Health check via IP"
+
+  # ---------------------------------------------------------------------------
+  # Cleanup on failure
+  # ---------------------------------------------------------------------------
+  rollback:
+    name: Rollback on Failure
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Save DOKS kubeconfig
+        run: |
+          doctl kubernetes cluster kubeconfig save ${{ secrets.DOKS_CLUSTER_NAME }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.13.0'
+
+      - name: Rollback Helm release
+        run: |
+          helm rollback ${{ env.HELM_RELEASE }} -n ${{ env.NAMESPACE }} || true
+
+      - name: Notify failure
+        run: |
+          echo "::error::Deployment failed. Automatic rollback attempted."

@@ -1,32 +1,100 @@
 "use client";
 
 import Link from "next/link";
-import { Task } from "@/lib/api";
+import { format, isPast, isToday } from "date-fns";
+import { Task, PRIORITY_CONFIG, PriorityLevel } from "@/lib/api";
+import { PriorityBadge } from "./PriorityPicker";
 
 interface TaskItemProps {
   task: Task;
   onToggle: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
+  onComplete?: (id: string) => Promise<Task | null>; // Returns next instance if recurring
 }
 
-export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
+// Recurrence indicator component
+function RecurrenceIndicator() {
   return (
-    <div className="flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+    <span
+      className="inline-flex items-center text-blue-500"
+      title="Recurring task"
+    >
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+        />
+      </svg>
+    </span>
+  );
+}
+
+export function TaskItem({ task, onToggle, onDelete, onComplete }: TaskItemProps) {
+  const priorityConfig = PRIORITY_CONFIG[task.priority as PriorityLevel] || PRIORITY_CONFIG[3];
+  const isRecurring = task.recurrence_rule_id !== null;
+
+  // Handle checkbox change - use onComplete for recurring tasks
+  const handleToggle = async () => {
+    if (!task.is_completed && isRecurring && onComplete) {
+      // For recurring tasks, use the complete endpoint
+      await onComplete(task.id);
+    } else {
+      // For regular tasks or uncompleting, use toggle
+      onToggle(task.id, !task.is_completed);
+    }
+  };
+
+  // Format due date with visual indicators
+  const formatDueDate = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    const date = new Date(dueDate);
+    const isOverdue = isPast(date) && !task.is_completed;
+    const isDueToday = isToday(date);
+
+    return {
+      text: format(date, "MMM d, yyyy h:mm a"),
+      isOverdue,
+      isDueToday,
+    };
+  };
+
+  const dueInfo = formatDueDate(task.due);
+
+  return (
+    <div
+      className="flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow"
+      style={{ borderLeftWidth: "4px", borderLeftColor: priorityConfig.color }}
+    >
       <div className="flex items-center space-x-4 flex-1">
         <input
           type="checkbox"
           checked={task.is_completed}
-          onChange={() => onToggle(task.id, !task.is_completed)}
+          onChange={handleToggle}
           className="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
         />
         <div className="flex-1 min-w-0">
-          <h3
-            className={`text-lg font-medium truncate ${
-              task.is_completed ? "line-through text-gray-400" : "text-gray-900"
-            }`}
-          >
-            {task.title}
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3
+              className={`text-lg font-medium truncate ${
+                task.is_completed ? "line-through text-gray-400" : "text-gray-900"
+              }`}
+            >
+              {task.title}
+            </h3>
+            {/* Priority Badge */}
+            {task.priority !== 5 && (
+              <PriorityBadge priority={task.priority} showLabel={task.priority <= 2} />
+            )}
+            {/* Recurrence Indicator */}
+            {isRecurring && <RecurrenceIndicator />}
+          </div>
           {task.description && (
             <p
               className={`text-sm truncate ${
@@ -35,6 +103,34 @@ export function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
             >
               {task.description}
             </p>
+          )}
+          {/* Due Date Display */}
+          {dueInfo && (
+            <p
+              className={`text-xs mt-1 ${
+                dueInfo.isOverdue
+                  ? "text-red-600 font-medium"
+                  : dueInfo.isDueToday
+                  ? "text-orange-600"
+                  : "text-gray-400"
+              }`}
+            >
+              {dueInfo.isOverdue ? "Overdue: " : dueInfo.isDueToday ? "Due today: " : "Due: "}
+              {dueInfo.text}
+            </p>
+          )}
+          {/* Tags Display */}
+          {task.tags && task.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {task.tags.map((tagName) => (
+                <span
+                  key={tagName}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600"
+                >
+                  {tagName}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       </div>

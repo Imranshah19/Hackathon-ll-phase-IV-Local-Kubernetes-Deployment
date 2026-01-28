@@ -199,3 +199,21 @@ serviceAccount:
   create: true
   name: ""
   annotations: {}
+
+# -----------------------------------------------------------------------------
+# Dapr Configuration (Phase 5 - US7 Event-Driven Architecture)
+# -----------------------------------------------------------------------------
+dapr:
+  enabled: false  # Enable in production with values-production.yaml
+  # Pub/Sub component name
+  pubsubName: "todo-pubsub"
+  # Topic for task events
+  taskEventsTopic: "task-events"
+  # Kafka configuration
+  kafka:
+    brokers: "localhost:9092"
+    saslEnabled: false
+    saslMechanism: "PLAIN"
+    tlsEnabled: false
+    tlsSkipVerify: false
+    version: "2.6.0"

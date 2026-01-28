@@ -28,6 +28,8 @@ from src.models.base import utc_now
 
 if TYPE_CHECKING:
     from src.models.conversation import Conversation
+    from src.models.recurrence import RecurrenceRule
+    from src.models.tag import Tag
     from src.models.task import Task
 
 
@@ -85,6 +87,17 @@ class User(UserBase, table=True):
 
     # Relationship to conversations (one-to-many with cascade delete) - Phase 3
     conversations: list["Conversation"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+
+    # Phase 5: Tags and recurrence rules
+    tags: list["Tag"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    )
+
+    recurrence_rules: list["RecurrenceRule"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )

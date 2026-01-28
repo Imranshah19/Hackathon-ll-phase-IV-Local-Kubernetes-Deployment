@@ -6,6 +6,7 @@ Configures the main application with:
 - Error handlers for consistent API responses
 - Database lifecycle management
 - API routers for auth and tasks
+- Phase 5: Prometheus metrics and structured logging
 """
 
 import os
@@ -13,6 +14,10 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Configure structured logging early
+from src.config.logging import configure_logging
+configure_logging()
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -123,15 +128,23 @@ def create_app() -> FastAPI:
     from src.api.chat import router as chat_router
     from src.api.conversations import router as conversations_router
     from src.api.health import router as health_router
+    from src.api.metrics import router as metrics_router
+    from src.api.tags import router as tags_router
 
     # Health endpoints (no prefix for Kubernetes compatibility)
     app.include_router(health_router, tags=["Health"])
+
+    # Phase 5: Prometheus metrics endpoint
+    app.include_router(metrics_router, tags=["Metrics"])
 
     # API endpoints
     app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
     app.include_router(tasks_router, prefix="/api/tasks", tags=["Tasks"])
     app.include_router(chat_router, prefix="/api/chat", tags=["Chat"])
     app.include_router(conversations_router, prefix="/api/conversations", tags=["Conversations"])
+
+    # Phase 5: Tags endpoint
+    app.include_router(tags_router, prefix="/api/tags", tags=["Tags"])
 
     return app
 

@@ -7,9 +7,10 @@ interface TaskListProps {
   tasks: Task[];
   onToggle: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
+  onComplete?: (id: string) => Promise<Task | null>; // Phase 5 - US4
 }
 
-export function TaskList({ tasks, onToggle, onDelete }: TaskListProps) {
+export function TaskList({ tasks, onToggle, onDelete, onComplete }: TaskListProps) {
   if (tasks.length === 0) {
     return (
       <div className="text-center py-12">
@@ -51,6 +52,7 @@ export function TaskList({ tasks, onToggle, onDelete }: TaskListProps) {
               task={task}
               onToggle={onToggle}
               onDelete={onDelete}
+              onComplete={onComplete}
             />
           ))}
         </div>
@@ -67,6 +69,7 @@ export function TaskList({ tasks, onToggle, onDelete }: TaskListProps) {
               task={task}
               onToggle={onToggle}
               onDelete={onDelete}
+              onComplete={onComplete}
             />
           ))}
         </div>

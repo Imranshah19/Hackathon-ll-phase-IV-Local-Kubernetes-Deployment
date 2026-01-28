@@ -1,0 +1,24 @@
+# =============================================================================
+# Dapr Pub/Sub Component - Local Development
+# =============================================================================
+# For local development, uses Redis as the message broker
+# In production, this is replaced by Kafka via Helm templates
+#
+# To run locally:
+#   dapr run --app-id todo-backend --app-port 8000 --components-path ./dapr/components python -m uvicorn src.main:app
+# =============================================================================
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-pubsub
+  namespace: default
+spec:
+  type: pubsub.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      value: "localhost:6379"
+    - name: redisPassword
+      value: ""
+    - name: consumerID
+      value: "todo-backend"

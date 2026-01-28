@@ -38,6 +38,28 @@ from src.models.message import (
 # Base utilities
 from src.models.base import utc_now
 
+# Phase 5: Tag models
+from src.models.tag import Tag, TagBase, TagCreate, TagPublic, TagUpdate
+
+# Phase 5: TaskTag junction model
+from src.models.task_tag import TaskTag
+
+# Phase 5: Recurrence models
+from src.models.recurrence import (
+    RecurrenceEndType,
+    RecurrenceFrequency,
+    RecurrenceRule,
+    RecurrenceRuleBase,
+    RecurrenceRuleCreate,
+    RecurrenceRulePublic,
+)
+
+# Phase 5: Reminder models
+from src.models.reminder import Reminder, ReminderBase, ReminderCreate, ReminderPublic
+
+# Phase 5: TaskEvent models
+from src.models.task_event import TaskEvent, TaskEventPublic, TaskEventType
+
 __all__ = [
     # Skill enums
     "SkillCategory",
@@ -72,4 +94,28 @@ __all__ = [
     "MessagePublic",
     # Base utilities
     "utc_now",
+    # Phase 5: Tag models
+    "Tag",
+    "TagBase",
+    "TagCreate",
+    "TagUpdate",
+    "TagPublic",
+    # Phase 5: TaskTag junction
+    "TaskTag",
+    # Phase 5: Recurrence models
+    "RecurrenceFrequency",
+    "RecurrenceEndType",
+    "RecurrenceRuleBase",
+    "RecurrenceRule",
+    "RecurrenceRuleCreate",
+    "RecurrenceRulePublic",
+    # Phase 5: Reminder models
+    "ReminderBase",
+    "Reminder",
+    "ReminderCreate",
+    "ReminderPublic",
+    # Phase 5: TaskEvent models
+    "TaskEventType",
+    "TaskEvent",
+    "TaskEventPublic",
 ]

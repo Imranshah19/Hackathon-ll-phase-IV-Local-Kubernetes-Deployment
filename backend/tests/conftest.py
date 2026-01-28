@@ -252,3 +252,54 @@ def sample_tasks_for_ai() -> list[dict[str, Any]]:
         {"id": str(uuid4()), "title": "Call mom", "is_completed": False},
         {"id": str(uuid4()), "title": "Finish report", "is_completed": True},
     ]
+
+
+# =============================================================================
+# Phase 5: Priority Testing Fixtures
+# =============================================================================
+
+@pytest.fixture
+def priority_labels() -> dict[int, str]:
+    """Priority value to label mapping."""
+    return {
+        1: "Critical",
+        2: "High",
+        3: "Medium",
+        4: "Low",
+        5: "None",
+    }
+
+
+@pytest.fixture
+def priority_colors() -> dict[int, str]:
+    """Priority value to color mapping (hex)."""
+    return {
+        1: "#EF4444",  # Red - Critical
+        2: "#F97316",  # Orange - High
+        3: "#EAB308",  # Yellow - Medium
+        4: "#22C55E",  # Green - Low
+        5: "#6B7280",  # Gray - None
+    }
+
+
+@pytest.fixture
+def sample_task_with_priority() -> dict[str, Any]:
+    """Sample task data with priority field."""
+    return {
+        "title": "Urgent Task",
+        "description": "This is a high priority task",
+        "is_completed": False,
+        "priority": 1,  # Critical
+    }
+
+
+@pytest.fixture
+def sample_tasks_with_priorities() -> list[dict[str, Any]]:
+    """Sample tasks with different priorities for filter/sort testing."""
+    return [
+        {"id": str(uuid4()), "title": "Critical task", "priority": 1, "is_completed": False},
+        {"id": str(uuid4()), "title": "High priority", "priority": 2, "is_completed": False},
+        {"id": str(uuid4()), "title": "Medium task", "priority": 3, "is_completed": False},
+        {"id": str(uuid4()), "title": "Low priority", "priority": 4, "is_completed": True},
+        {"id": str(uuid4()), "title": "No priority", "priority": 5, "is_completed": False},
+    ]

@@ -1,0 +1,90 @@
+{{- if .Values.dapr.enabled }}
+# =============================================================================
+# Dapr Pub/Sub Component for Task Events
+# =============================================================================
+# This component configures Dapr to use Kafka for event-driven messaging
+# Supports both managed Kafka (Confluent, MSK) and self-hosted
+# =============================================================================
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ .Values.dapr.pubsubName | default "todo-pubsub" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    # Kafka broker addresses
+    - name: brokers
+      {{- if .Values.dapr.kafka.brokers }}
+      value: {{ .Values.dapr.kafka.brokers | quote }}
+      {{- else }}
+      secretKeyRef:
+        name: {{ include "todo-app.secret.name" . }}
+        key: KAFKA_BROKERS
+      {{- end }}
+
+    # Consumer group for this application
+    - name: consumerGroup
+      value: "todo-app-consumer"
+
+    # Authentication (if using SASL)
+    {{- if .Values.dapr.kafka.saslEnabled }}
+    - name: authType
+      value: "password"
+    - name: saslUsername
+      secretKeyRef:
+        name: {{ include "todo-app.secret.name" . }}
+        key: KAFKA_USERNAME
+    - name: saslPassword
+      secretKeyRef:
+        name: {{ include "todo-app.secret.name" . }}
+        key: KAFKA_PASSWORD
+    - name: saslMechanism
+      value: {{ .Values.dapr.kafka.saslMechanism | default "PLAIN" | quote }}
+    {{- end }}
+
+    # TLS configuration
+    {{- if .Values.dapr.kafka.tlsEnabled }}
+    - name: tls
+      value: "true"
+    - name: tlsSkipVerify
+      value: {{ .Values.dapr.kafka.tlsSkipVerify | default "false" | quote }}
+    {{- end }}
+
+    # Message settings
+    - name: maxMessageBytes
+      value: "1048576"  # 1MB
+    - name: consumeRetryInterval
+      value: "100ms"
+    - name: version
+      value: {{ .Values.dapr.kafka.version | default "2.6.0" | quote }}
+
+    # Auto-create topics (development only)
+    - name: disableTls
+      value: {{ not (.Values.dapr.kafka.tlsEnabled | default false) | quote }}
+
+  # Scopes restrict which apps can use this component
+  scopes:
+    - todo-backend
+---
+# =============================================================================
+# Dapr Subscription for Task Events
+# =============================================================================
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: task-events-subscription
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+spec:
+  pubsubname: {{ .Values.dapr.pubsubName | default "todo-pubsub" }}
+  topic: {{ .Values.dapr.taskEventsTopic | default "task-events" }}
+  routes:
+    default: /api/events/task
+  scopes:
+    - todo-backend
+{{- end }}

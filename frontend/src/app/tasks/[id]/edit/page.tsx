@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ProtectedRoute } from "@/lib/auth";
-import { api, Task, ApiClientError } from "@/lib/api";
+import { api, Task, Tag, ApiClientError } from "@/lib/api";
 import { TaskForm } from "@/components/TaskForm";
 
 function EditTaskContent() {
@@ -13,6 +13,7 @@ function EditTaskContent() {
   const taskId = params.id as string;
 
   const [task, setTask] = useState<Task | null>(null);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -37,16 +38,35 @@ function EditTaskContent() {
     }
   }, [taskId]);
 
+  const fetchTags = useCallback(async () => {
+    try {
+      const tags = await api.getTags();
+      setAvailableTags(tags);
+    } catch (err) {
+      console.error("Failed to fetch tags:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchTask();
-  }, [fetchTask]);
+    fetchTags();
+  }, [fetchTask, fetchTags]);
 
-  const handleUpdate = async (title: string, description: string) => {
+  const handleUpdate = async (data: {
+    title: string;
+    description: string;
+    priority: number;
+    due: string | null;
+    tagIds: string[];
+  }) => {
     setIsSaving(true);
     try {
       await api.updateTask(taskId, {
-        title,
-        description: description || undefined,
+        title: data.title,
+        description: data.description || undefined,
+        priority: data.priority,
+        due: data.due || undefined,
+        tag_ids: data.tagIds,
       });
       router.push("/tasks");
     } catch (err) {
@@ -57,6 +77,20 @@ function EditTaskContent() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleCreateTag = async (name: string): Promise<Tag> => {
+    const newTag = await api.createTag({ name });
+    setAvailableTags((prev) => [...prev, newTag]);
+    return newTag;
+  };
+
+  // Map task tag names to tag IDs for initial selection
+  const getInitialTagIds = (): string[] => {
+    if (!task || !task.tags) return [];
+    return task.tags
+      .map((tagName) => availableTags.find((t) => t.name === tagName)?.id)
+      .filter((id): id is string => id !== undefined);
   };
 
   if (isLoading) {
@@ -120,8 +154,13 @@ function EditTaskContent() {
           <TaskForm
             initialTitle={task.title}
             initialDescription={task.description || ""}
+            initialPriority={task.priority}
+            initialDue={task.due}
+            initialTagIds={getInitialTagIds()}
+            availableTags={availableTags}
             onSubmit={handleUpdate}
             onCancel={() => router.push("/tasks")}
+            onCreateTag={handleCreateTag}
             submitLabel="Save Changes"
             isLoading={isSaving}
           />

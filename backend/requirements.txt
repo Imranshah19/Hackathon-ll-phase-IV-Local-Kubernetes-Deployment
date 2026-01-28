@@ -33,3 +33,8 @@ alembic>=1.13.0
 # AI Integration (Phase 3)
 openai>=1.12.0
 anthropic>=0.18.0
+
+# Phase 5: Advanced Features
+apscheduler>=3.10.0
+python-dateutil>=2.8.2
+dapr>=1.12.0
