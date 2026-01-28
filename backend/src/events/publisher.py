@@ -48,7 +48,7 @@ class EventPublisher:
             topic_name: Topic to publish to (default from TOPIC_NAME env)
         """
         self.dapr_port = dapr_port or int(os.getenv("DAPR_HTTP_PORT", "3500"))
-        self.pubsub_name = pubsub_name or os.getenv("PUBSUB_NAME", "kafka-pubsub")
+        self.pubsub_name = pubsub_name or os.getenv("PUBSUB_NAME", "todo-pubsub")
         self.topic_name = topic_name or os.getenv("TOPIC_NAME", "task-events")
         self.base_url = f"http://localhost:{self.dapr_port}"
         self._client: httpx.AsyncClient | None = None

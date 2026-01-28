@@ -1,0 +1,65 @@
+# =============================================================================
+# Dapr Pub/Sub Component - Kafka (Kubernetes)
+# =============================================================================
+# Configures Dapr to use Kafka for pub/sub messaging in Kubernetes
+# Use this instead of the Redis component for Minikube deployment
+#
+# Deploy after Kafka is running:
+#   kubectl apply -f k8s/dapr-pubsub-kafka.yaml
+# =============================================================================
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-pubsub
+  namespace: default
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    # Kafka broker address (internal Kubernetes DNS)
+    - name: brokers
+      value: "kafka.kafka.svc.cluster.local:9092"
+
+    # Consumer group
+    - name: consumerGroup
+      value: "todo-app-consumer"
+
+    # Auto-create topics
+    - name: authType
+      value: "none"
+
+    # Message settings
+    - name: maxMessageBytes
+      value: "1048576"
+
+    # Retry settings
+    - name: consumeRetryInterval
+      value: "100ms"
+
+    # Kafka version
+    - name: version
+      value: "2.6.0"
+
+    # Initial offset (earliest to not miss messages)
+    - name: initialOffset
+      value: "oldest"
+
+  # Restrict to backend app only
+  scopes:
+    - todo-backend
+---
+# =============================================================================
+# Dapr Subscription for Task Events
+# =============================================================================
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: task-events-subscription
+  namespace: default
+spec:
+  pubsubname: todo-pubsub
+  topic: task-events
+  routes:
+    default: /api/events/task
+  scopes:
+    - todo-backend
