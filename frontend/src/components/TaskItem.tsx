@@ -10,6 +10,7 @@ interface TaskItemProps {
   onToggle: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
   onComplete?: (id: string) => Promise<Task | null>; // Returns next instance if recurring
+  reminderCount?: number; // Phase 5 - US5: Number of pending reminders
 }
 
 // Recurrence indicator component
@@ -36,9 +37,37 @@ function RecurrenceIndicator() {
   );
 }
 
-export function TaskItem({ task, onToggle, onDelete, onComplete }: TaskItemProps) {
+// Reminder indicator component (Phase 5 - US5)
+function ReminderIndicator({ count }: { count: number }) {
+  return (
+    <span
+      className="inline-flex items-center text-yellow-500"
+      title={`${count} reminder${count > 1 ? 's' : ''} set`}
+    >
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+        />
+      </svg>
+      {count > 1 && (
+        <span className="text-xs ml-0.5">{count}</span>
+      )}
+    </span>
+  );
+}
+
+export function TaskItem({ task, onToggle, onDelete, onComplete, reminderCount = 0 }: TaskItemProps) {
   const priorityConfig = PRIORITY_CONFIG[task.priority as PriorityLevel] || PRIORITY_CONFIG[3];
   const isRecurring = task.recurrence_rule_id !== null;
+  const hasReminders = reminderCount > 0;
 
   // Handle checkbox change - use onComplete for recurring tasks
   const handleToggle = async () => {
@@ -94,6 +123,8 @@ export function TaskItem({ task, onToggle, onDelete, onComplete }: TaskItemProps
             )}
             {/* Recurrence Indicator */}
             {isRecurring && <RecurrenceIndicator />}
+            {/* Reminder Indicator (Phase 5 - US5) */}
+            {hasReminders && <ReminderIndicator count={reminderCount} />}
           </div>
           {task.description && (
             <p

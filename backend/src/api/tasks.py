@@ -43,6 +43,7 @@ from src.models.recurrence import (
 from src.services.tag_service import TagService
 from src.services.recurrence_service import RecurrenceService
 from src.services.task_event_service import TaskEventService
+from src.services.reminder_service import ReminderService
 
 
 # =============================================================================
@@ -487,6 +488,10 @@ async def complete_task(
     session.add(task)
     session.commit()
     session.refresh(task)
+
+    # Cancel pending reminders (FR-020)
+    reminder_service = ReminderService(session, user_id)
+    reminder_service.cancel_task_reminders(task_id)
 
     next_instance = None
     next_task_id = None

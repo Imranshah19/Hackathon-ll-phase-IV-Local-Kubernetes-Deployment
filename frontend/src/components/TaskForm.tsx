@@ -5,6 +5,7 @@ import { Tag, RecurrenceInput } from "@/lib/api";
 import { PriorityPicker } from "./PriorityPicker";
 import { TagPicker } from "./TagPicker";
 import { RecurrencePicker } from "./RecurrencePicker";
+import { ReminderPicker, ReminderInput } from "./ReminderPicker";
 
 export interface TaskFormData {
   title: string;
@@ -13,6 +14,7 @@ export interface TaskFormData {
   due: string | null;
   tagIds: string[];
   recurrence: RecurrenceInput | null; // Phase 5 - US4
+  reminders: ReminderInput[]; // Phase 5 - US5
 }
 
 interface TaskFormProps {
@@ -22,6 +24,7 @@ interface TaskFormProps {
   initialDue?: string | null;
   initialTagIds?: string[];
   initialRecurrence?: RecurrenceInput | null;
+  initialReminders?: ReminderInput[];
   availableTags?: Tag[];
   onSubmit: (data: TaskFormData) => Promise<void>;
   onCancel?: () => void;
@@ -29,6 +32,7 @@ interface TaskFormProps {
   submitLabel?: string;
   isLoading?: boolean;
   showRecurrence?: boolean; // Hide for editing existing tasks
+  showReminders?: boolean; // Phase 5 - US5
 }
 
 export function TaskForm({
@@ -38,6 +42,7 @@ export function TaskForm({
   initialDue = null,
   initialTagIds = [],
   initialRecurrence = null,
+  initialReminders = [],
   availableTags = [],
   onSubmit,
   onCancel,
@@ -45,6 +50,7 @@ export function TaskForm({
   submitLabel = "Create Task",
   isLoading = false,
   showRecurrence = true,
+  showReminders = true,
 }: TaskFormProps) {
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
@@ -52,6 +58,7 @@ export function TaskForm({
   const [due, setDue] = useState(initialDue || "");
   const [tagIds, setTagIds] = useState<string[]>(initialTagIds);
   const [recurrence, setRecurrence] = useState<RecurrenceInput | null>(initialRecurrence);
+  const [reminders, setReminders] = useState<ReminderInput[]>(initialReminders);
   const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,6 +83,7 @@ export function TaskForm({
         due: due || null,
         tagIds,
         recurrence,
+        reminders,
       });
       if (!initialTitle) {
         // Reset form only for new tasks
@@ -85,6 +93,7 @@ export function TaskForm({
         setDue("");
         setTagIds([]);
         setRecurrence(null);
+        setReminders([]);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -193,6 +202,21 @@ export function TaskForm({
           <RecurrencePicker
             value={recurrence}
             onChange={setRecurrence}
+            disabled={isLoading}
+          />
+        </div>
+      )}
+
+      {/* Phase 5 - US5: Reminders */}
+      {showReminders && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Reminders
+          </label>
+          <ReminderPicker
+            value={reminders}
+            onChange={setReminders}
+            dueDate={due || null}
             disabled={isLoading}
           />
         </div>

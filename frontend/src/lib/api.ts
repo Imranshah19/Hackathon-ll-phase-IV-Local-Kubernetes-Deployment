@@ -189,6 +189,7 @@ export interface ChatMessageResponse {
   message_id: string;
   task: Task | null;
   tasks: Task[] | null;
+  language: string; // Phase 5 (US6): en, ur, or mixed
 }
 
 export interface ConfirmActionRequest {
@@ -222,6 +223,39 @@ export interface Message {
 
 export interface ConversationDetail extends Conversation {
   messages: Message[];
+}
+
+// =============================================================================
+// Reminder Types (Phase 5 - US5)
+// =============================================================================
+
+export interface Reminder {
+  id: string;
+  task_id: string;
+  remind_at: string;
+  message: string | null;
+  sent: boolean;
+  sent_at: string | null;
+  created_at: string;
+}
+
+export interface ReminderCreateRequest {
+  task_id: string;
+  remind_at: string;
+  message?: string;
+}
+
+export interface ReminderNotification {
+  type: "reminder" | "connected";
+  data?: {
+    reminder_id: string;
+    task_id: string;
+    task_title: string;
+    message: string;
+    remind_at: string;
+  };
+  message?: string;
+  timestamp?: string;
 }
 
 // =============================================================================
@@ -481,6 +515,44 @@ class ApiClient {
     return this.request<void>(`/api/conversations/${id}`, {
       method: "DELETE",
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reminder Endpoints (Phase 5 - US5)
+  // ---------------------------------------------------------------------------
+
+  async getReminders(taskId?: string): Promise<Reminder[]> {
+    const params = new URLSearchParams();
+    if (taskId) {
+      params.append("task_id", taskId);
+    }
+    const queryString = params.toString();
+    return this.request<Reminder[]>(`/api/reminders${queryString ? `?${queryString}` : ""}`);
+  }
+
+  async getReminder(id: string): Promise<Reminder> {
+    return this.request<Reminder>(`/api/reminders/${id}`);
+  }
+
+  async createReminder(data: ReminderCreateRequest): Promise<Reminder> {
+    return this.request<Reminder>("/api/reminders", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteReminder(id: string): Promise<void> {
+    return this.request<void>(`/api/reminders/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Get the SSE stream URL for reminder notifications.
+   * Use EventSource to connect to this endpoint.
+   */
+  getReminderStreamUrl(): string {
+    return `${this.baseUrl}/api/reminders/stream`;
   }
 }
 

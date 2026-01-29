@@ -7,8 +7,10 @@ Configures the main application with:
 - Database lifecycle management
 - API routers for auth and tasks
 - Phase 5: Prometheus metrics and structured logging
+- Phase 5: Background task for reminder notifications
 """
 
+import asyncio
 import os
 from dotenv import load_dotenv
 
@@ -40,12 +42,24 @@ async def lifespan(app: FastAPI):
     Application lifespan manager.
 
     Startup: Creates database tables if they don't exist.
+             Starts background reminder checker.
     Shutdown: Cleanup resources if needed.
     """
     # Startup
     create_db_and_tables()
+
+    # Start background reminder checker (Phase 5)
+    from src.config.scheduler import check_due_reminders
+    reminder_task = asyncio.create_task(check_due_reminders())
+
     yield
-    # Shutdown (cleanup if needed)
+
+    # Shutdown - cancel background tasks
+    reminder_task.cancel()
+    try:
+        await reminder_task
+    except asyncio.CancelledError:
+        pass
 
 
 # =============================================================================
@@ -145,6 +159,10 @@ def create_app() -> FastAPI:
 
     # Phase 5: Tags endpoint
     app.include_router(tags_router, prefix="/api/tags", tags=["Tags"])
+
+    # Phase 5: Reminders endpoint
+    from src.api.reminders import router as reminders_router
+    app.include_router(reminders_router, prefix="/api/reminders", tags=["Reminders"])
 
     return app
 
