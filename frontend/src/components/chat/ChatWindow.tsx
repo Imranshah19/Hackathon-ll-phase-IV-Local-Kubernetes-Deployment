@@ -33,6 +33,7 @@ interface DisplayMessage extends Message {
   suggestedCli?: string | null;
   isFallback?: boolean;
   needsConfirmation?: boolean;
+  language?: string; // Phase 5 (US6): en, ur, or mixed
 }
 
 export function ChatWindow({
@@ -124,6 +125,7 @@ export function ChatWindow({
         suggestedCli: response.suggested_cli,
         isFallback: response.is_fallback,
         needsConfirmation: response.needs_confirmation,
+        language: response.language, // Phase 5 (US6)
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
@@ -167,6 +169,7 @@ export function ChatWindow({
         timestamp: new Date().toISOString(),
         task: response.task,
         tasks: response.tasks,
+        language: response.language, // Phase 5 (US6)
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err) {
@@ -194,6 +197,7 @@ export function ChatWindow({
               message={message}
               task={message.task}
               tasks={message.tasks}
+              language={message.language}
             />
 
             {/* Show fallback CLI if applicable */}

@@ -21,11 +21,11 @@
 
 **Purpose**: Project initialization, dependencies, and base configuration
 
-- [ ] T001 Install Phase 5 backend dependencies (APScheduler, python-dateutil, dapr-client) in backend/pyproject.toml
-- [ ] T002 [P] Install Phase 5 frontend dependencies (date-fns) in frontend/package.json
-- [ ] T003 [P] Create Dapr components directory at dapr/components/
-- [ ] T004 [P] Create events module directory at backend/src/events/__init__.py
-- [ ] T005 Create database migration for Phase 5 schema in backend/alembic/versions/phase5_advanced_features.py
+- [x] T001 Install Phase 5 backend dependencies (APScheduler, python-dateutil, dapr-client) in backend/pyproject.toml
+- [x] T002 [P] Install Phase 5 frontend dependencies (date-fns) in frontend/package.json
+- [x] T003 [P] Create Dapr components directory at dapr/components/
+- [x] T004 [P] Create events module directory at backend/src/events/__init__.py
+- [x] T005 Create database migration for Phase 5 schema in backend/alembic/versions/phase5_advanced_features.py
 
 ---
 
@@ -35,18 +35,18 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Extend Task model with priority field (default=3) in backend/src/models/task.py
-- [ ] T007 [P] Create Tag model in backend/src/models/tag.py
-- [ ] T008 [P] Create TaskTag junction model in backend/src/models/task_tag.py
-- [ ] T009 [P] Create RecurrenceRule model in backend/src/models/recurrence.py
-- [ ] T010 [P] Create Reminder model in backend/src/models/reminder.py
-- [ ] T011 [P] Create TaskEvent model in backend/src/models/task_event.py
-- [ ] T012 Update backend/src/models/__init__.py to export all new models
-- [ ] T013 [P] Create event schema definitions (CloudEvents format) in backend/src/events/schemas.py
-- [ ] T014 [P] Create Dapr pub/sub publisher client in backend/src/events/publisher.py
-- [ ] T015 [P] Create Prometheus metrics endpoint in backend/src/api/metrics.py
-- [ ] T016 [P] Configure structured JSON logging in backend/src/config/logging.py
-- [ ] T017 Register metrics endpoint in backend/src/main.py
+- [x] T006 Extend Task model with priority field (default=3) in backend/src/models/task.py
+- [x] T007 [P] Create Tag model in backend/src/models/tag.py
+- [x] T008 [P] Create TaskTag junction model in backend/src/models/task_tag.py
+- [x] T009 [P] Create RecurrenceRule model in backend/src/models/recurrence.py
+- [x] T010 [P] Create Reminder model in backend/src/models/reminder.py
+- [x] T011 [P] Create TaskEvent model in backend/src/models/task_event.py
+- [x] T012 Update backend/src/models/__init__.py to export all new models
+- [x] T013 [P] Create event schema definitions (CloudEvents format) in backend/src/events/schemas.py
+- [x] T014 [P] Create Dapr pub/sub publisher client in backend/src/events/publisher.py
+- [x] T015 [P] Create Prometheus metrics endpoint in backend/src/api/metrics.py
+- [x] T016 [P] Configure structured JSON logging in backend/src/config/logging.py
+- [x] T017 Register metrics endpoint in backend/src/main.py
 
 **Checkpoint**: Foundation ready - all models exist, event infrastructure configured
 
@@ -60,18 +60,18 @@
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Contract test for priority in task creation in backend/tests/contract/test_task_priority.py
-- [ ] T019 [P] [US1] Contract test for priority filtering in backend/tests/contract/test_task_filters.py
+- [x] T018 [P] [US1] Contract test for priority in task creation in backend/tests/contract/test_task_priority.py
+- [x] T019 [P] [US1] Contract test for priority filtering in backend/tests/contract/test_task_filters.py
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Update CreateTaskRequest schema with priority field in backend/src/api/tasks.py
-- [ ] T021 [US1] Update task list endpoint with priority filter param in backend/src/api/tasks.py
-- [ ] T022 [US1] Update task list endpoint with sort_by=priority in backend/src/api/tasks.py
-- [ ] T023 [P] [US1] Create PriorityPicker component in frontend/src/components/PriorityPicker.tsx
-- [ ] T024 [US1] Integrate PriorityPicker in TaskForm in frontend/src/components/TaskForm.tsx
-- [ ] T025 [US1] Add priority visual indicators (colors) in frontend/src/components/TaskItem.tsx
-- [ ] T026 [US1] Add priority filter dropdown in frontend/src/components/TaskFilters.tsx
+- [x] T020 [US1] Update CreateTaskRequest schema with priority field in backend/src/api/tasks.py
+- [x] T021 [US1] Update task list endpoint with priority filter param in backend/src/api/tasks.py
+- [x] T022 [US1] Update task list endpoint with sort_by=priority in backend/src/api/tasks.py
+- [x] T023 [P] [US1] Create PriorityPicker component in frontend/src/components/PriorityPicker.tsx
+- [x] T024 [US1] Integrate PriorityPicker in TaskForm in frontend/src/components/TaskForm.tsx
+- [x] T025 [US1] Add priority visual indicators (colors) in frontend/src/components/TaskItem.tsx
+- [x] T026 [US1] Add priority filter dropdown in frontend/src/components/TaskFilters.tsx
 
 **Checkpoint**: User Story 1 complete - priority management works independently
 
@@ -85,21 +85,21 @@
 
 ### Tests for User Story 2
 
-- [ ] T027 [P] [US2] Contract test for tag CRUD in backend/tests/contract/test_tags.py
-- [ ] T028 [P] [US2] Integration test for task-tag association in backend/tests/integration/test_tags.py
+- [x] T027 [P] [US2] Contract test for tag CRUD in backend/tests/contract/test_tags.py
+- [x] T028 [P] [US2] Integration test for task-tag association in backend/tests/integration/test_tags.py
 
 ### Implementation for User Story 2
 
-- [ ] T029 [US2] Create TagService with CRUD and count logic in backend/src/services/tag_service.py
-- [ ] T030 [US2] Create tag API endpoints (list, create, update, delete, suggest) in backend/src/api/tags.py
-- [ ] T031 [US2] Register tag router in backend/src/main.py
-- [ ] T032 [US2] Update task creation/update to handle tag_ids in backend/src/api/tasks.py
-- [ ] T033 [US2] Update task list endpoint with tags filter param in backend/src/api/tasks.py
-- [ ] T034 [P] [US2] Create TagManager component in frontend/src/components/TagManager.tsx
-- [ ] T035 [P] [US2] Create TagPicker component (with autocomplete) in frontend/src/components/TagPicker.tsx
-- [ ] T036 [US2] Integrate TagPicker in TaskForm in frontend/src/components/TaskForm.tsx
-- [ ] T037 [US2] Display tags on TaskItem in frontend/src/components/TaskItem.tsx
-- [ ] T038 [US2] Add tag filter in TaskFilters in frontend/src/components/TaskFilters.tsx
+- [x] T029 [US2] Create TagService with CRUD and count logic in backend/src/services/tag_service.py
+- [x] T030 [US2] Create tag API endpoints (list, create, update, delete, suggest) in backend/src/api/tags.py
+- [x] T031 [US2] Register tag router in backend/src/main.py
+- [x] T032 [US2] Update task creation/update to handle tag_ids in backend/src/api/tasks.py
+- [x] T033 [US2] Update task list endpoint with tags filter param in backend/src/api/tasks.py
+- [x] T034 [P] [US2] Create TagManager component in frontend/src/components/TagManager.tsx
+- [x] T035 [P] [US2] Create TagPicker component (with autocomplete) in frontend/src/components/TagPicker.tsx
+- [x] T036 [US2] Integrate TagPicker in TaskForm in frontend/src/components/TaskForm.tsx
+- [x] T037 [US2] Display tags on TaskItem in frontend/src/components/TaskItem.tsx
+- [x] T038 [US2] Add tag filter in TaskFilters in frontend/src/components/TaskFilters.tsx
 
 **Checkpoint**: User Story 2 complete - tags work independently
 
@@ -113,20 +113,20 @@
 
 ### Tests for User Story 3
 
-- [ ] T039 [P] [US3] Contract test for combined filters in backend/tests/contract/test_task_filters.py
-- [ ] T040 [P] [US3] Contract test for sort options in backend/tests/contract/test_task_sorting.py
+- [x] T039 [P] [US3] Contract test for combined filters in backend/tests/contract/test_task_filters.py
+- [x] T040 [P] [US3] Contract test for sort options in backend/tests/contract/test_task_sorting.py
 
 ### Implementation for User Story 3
 
-- [ ] T041 [US3] Implement due_from/due_to date range filter in backend/src/api/tasks.py
-- [ ] T042 [US3] Implement search text filter (title/description) in backend/src/api/tasks.py
-- [ ] T043 [US3] Implement combined filter logic with AND semantics in backend/src/api/tasks.py
-- [ ] T044 [US3] Implement sort_order (asc/desc) for all sort_by options in backend/src/api/tasks.py
-- [ ] T045 [US3] Add database indexes for filter performance in backend/alembic/versions/phase5_indexes.py
-- [ ] T046 [US3] Update TaskFilters with date range picker in frontend/src/components/TaskFilters.tsx
-- [ ] T047 [US3] Add search input to TaskFilters in frontend/src/components/TaskFilters.tsx
-- [ ] T048 [US3] Add sort dropdown (field + direction) in frontend/src/components/TaskFilters.tsx
-- [ ] T049 [US3] Persist filter/sort state in session storage in frontend/src/app/tasks/page.tsx
+- [x] T041 [US3] Implement due_from/due_to date range filter in backend/src/api/tasks.py
+- [x] T042 [US3] Implement search text filter (title/description) in backend/src/api/tasks.py
+- [x] T043 [US3] Implement combined filter logic with AND semantics in backend/src/api/tasks.py
+- [x] T044 [US3] Implement sort_order (asc/desc) for all sort_by options in backend/src/api/tasks.py
+- [x] T045 [US3] Add database indexes for filter performance in backend/alembic/versions/phase5_indexes.py
+- [x] T046 [US3] Update TaskFilters with date range picker in frontend/src/components/TaskFilters.tsx
+- [x] T047 [US3] Add search input to TaskFilters in frontend/src/components/TaskFilters.tsx
+- [x] T048 [US3] Add sort dropdown (field + direction) in frontend/src/components/TaskFilters.tsx
+- [x] T049 [US3] Persist filter/sort state in session storage in frontend/src/app/tasks/page.tsx
 
 **Checkpoint**: User Story 3 complete - full filtering/sorting works independently
 
@@ -140,21 +140,21 @@
 
 ### Tests for User Story 4
 
-- [ ] T050 [P] [US4] Unit test for RRULE next occurrence calculation in backend/tests/unit/test_recurrence.py
-- [ ] T051 [P] [US4] Integration test for recurring task completion in backend/tests/integration/test_recurrence.py
+- [x] T050 [P] [US4] Unit test for RRULE next occurrence calculation in backend/tests/unit/test_recurrence.py
+- [x] T051 [P] [US4] Integration test for recurring task completion in backend/tests/integration/test_recurrence.py
 
 ### Implementation for User Story 4
 
-- [ ] T052 [US4] Create RecurrenceService with next occurrence logic in backend/src/services/recurrence_service.py
-- [ ] T053 [US4] Extend Task model with recurrence_rule_id and parent_task_id in backend/src/models/task.py
-- [ ] T054 [US4] Update CreateTaskRequest with optional recurrence field in backend/src/api/tasks.py
-- [ ] T055 [US4] Update complete endpoint to generate next instance in backend/src/api/tasks.py
-- [ ] T056 [US4] Update delete endpoint with delete_series option in backend/src/api/tasks.py
-- [ ] T057 [US4] Update UpdateTaskRequest with update_series option in backend/src/api/tasks.py
-- [ ] T058 [P] [US4] Create RecurrencePicker component in frontend/src/components/RecurrencePicker.tsx
-- [ ] T059 [US4] Integrate RecurrencePicker in TaskForm in frontend/src/components/TaskForm.tsx
-- [ ] T060 [US4] Show recurrence indicator on TaskItem in frontend/src/components/TaskItem.tsx
-- [ ] T061 [US4] Handle complete response with next_instance in frontend/src/components/TaskItem.tsx
+- [x] T052 [US4] Create RecurrenceService with next occurrence logic in backend/src/services/recurrence_service.py
+- [x] T053 [US4] Extend Task model with recurrence_rule_id and parent_task_id in backend/src/models/task.py
+- [x] T054 [US4] Update CreateTaskRequest with optional recurrence field in backend/src/api/tasks.py
+- [x] T055 [US4] Update complete endpoint to generate next instance in backend/src/api/tasks.py
+- [x] T056 [US4] Update delete endpoint with delete_series option in backend/src/api/tasks.py
+- [x] T057 [US4] Update UpdateTaskRequest with update_series option in backend/src/api/tasks.py
+- [x] T058 [P] [US4] Create RecurrencePicker component in frontend/src/components/RecurrencePicker.tsx
+- [x] T059 [US4] Integrate RecurrencePicker in TaskForm in frontend/src/components/TaskForm.tsx
+- [x] T060 [US4] Show recurrence indicator on TaskItem in frontend/src/components/TaskItem.tsx
+- [x] T061 [US4] Handle complete response with next_instance in frontend/src/components/TaskItem.tsx
 
 **Checkpoint**: User Story 4 complete - recurring tasks work independently
 
@@ -168,21 +168,21 @@
 
 ### Tests for User Story 5
 
-- [ ] T062 [P] [US5] Contract test for reminder CRUD in backend/tests/contract/test_reminders.py
-- [ ] T063 [P] [US5] Integration test for reminder delivery in backend/tests/integration/test_reminders.py
+- [x] T062 [P] [US5] Contract test for reminder CRUD in backend/tests/contract/test_reminders.py
+- [x] T063 [P] [US5] Integration test for reminder delivery in backend/tests/integration/test_reminders.py
 
 ### Implementation for User Story 5
 
-- [ ] T064 [US5] Create ReminderService with scheduling logic in backend/src/services/reminder_service.py
-- [ ] T065 [US5] Configure APScheduler with PostgreSQL job store in backend/src/config/scheduler.py
-- [ ] T066 [US5] Create reminder API endpoints (list, create, delete) in backend/src/api/reminders.py
-- [ ] T067 [US5] Create SSE stream endpoint for notifications in backend/src/api/reminders.py
-- [ ] T068 [US5] Register reminder router in backend/src/main.py
-- [ ] T069 [US5] Implement auto-cancel on task completion in backend/src/api/tasks.py
-- [ ] T070 [P] [US5] Create ReminderPicker component in frontend/src/components/ReminderPicker.tsx
-- [ ] T071 [US5] Integrate ReminderPicker in TaskForm in frontend/src/components/TaskForm.tsx
-- [ ] T072 [US5] Create NotificationProvider with SSE connection in frontend/src/components/NotificationProvider.tsx
-- [ ] T073 [US5] Display reminder indicators on TaskItem in frontend/src/components/TaskItem.tsx
+- [x] T064 [US5] Create ReminderService with scheduling logic in backend/src/services/reminder_service.py
+- [x] T065 [US5] Configure asyncio scheduler with SSE in backend/src/config/scheduler.py
+- [x] T066 [US5] Create reminder API endpoints (list, create, delete) in backend/src/api/reminders.py
+- [x] T067 [US5] Create SSE stream endpoint for notifications in backend/src/api/reminders.py
+- [x] T068 [US5] Register reminder router in backend/src/main.py
+- [x] T069 [US5] Implement auto-cancel on task completion in backend/src/api/tasks.py
+- [x] T070 [P] [US5] Create ReminderPicker component in frontend/src/components/ReminderPicker.tsx
+- [x] T071 [US5] Integrate ReminderPicker in TaskForm in frontend/src/components/TaskForm.tsx
+- [x] T072 [US5] Create NotificationProvider with SSE connection in frontend/src/components/NotificationProvider.tsx
+- [x] T073 [US5] Display reminder indicators on TaskItem in frontend/src/components/TaskItem.tsx
 
 **Checkpoint**: User Story 5 complete - reminders work independently
 
@@ -201,14 +201,14 @@
 
 ### Implementation for User Story 6
 
-- [ ] T076 [US6] Create language detection utility (Unicode script) in backend/src/ai/language.py
-- [ ] T077 [US6] Create Urdu intent patterns in backend/src/ai/prompts/urdu.py
-- [ ] T078 [US6] Create Urdu response templates in backend/src/ai/prompts/urdu.py
-- [ ] T079 [US6] Extend interpreter with Urdu pattern matching in backend/src/ai/interpreter.py
-- [ ] T080 [US6] Update chat endpoint to detect and respond in language in backend/src/api/chat.py
-- [ ] T081 [US6] Add language field to chat response schema in backend/src/api/chat.py
-- [ ] T082 [US6] Update ChatWindow to display RTL text for Urdu in frontend/src/components/chat/ChatWindow.tsx
-- [ ] T083 [US6] Add Urdu font support in frontend/src/app/layout.tsx
+- [x] T076 [US6] Create language detection utility (Unicode script) in backend/src/ai/urdu.py (moved to urdu.py)
+- [x] T077 [US6] Create Urdu intent patterns in backend/src/ai/urdu.py
+- [x] T078 [US6] Create Urdu response templates in backend/src/ai/urdu.py
+- [x] T079 [US6] Extend interpreter with Urdu pattern matching in backend/src/ai/interpreter.py
+- [x] T080 [US6] Update chat endpoint to detect and respond in language in backend/src/api/chat.py
+- [x] T081 [US6] Add language field to chat response schema in backend/src/api/chat.py
+- [x] T082 [US6] Update ChatWindow to display RTL text for Urdu in frontend/src/components/chat/ChatWindow.tsx
+- [x] T083 [US6] Add Urdu font support in frontend/src/app/layout.tsx
 
 **Checkpoint**: User Story 6 complete - Urdu chatbot works independently
 
@@ -227,15 +227,15 @@
 
 ### Implementation for User Story 7
 
-- [ ] T086 [US7] Create Dapr pub/sub component config in dapr/components/pubsub.yaml
-- [ ] T087 [US7] Implement EventPublisher.publish() method in backend/src/events/publisher.py
-- [ ] T088 [US7] Create TaskEventService for event creation/retry in backend/src/services/event_service.py
-- [ ] T089 [US7] Hook event publishing into task create in backend/src/api/tasks.py
-- [ ] T090 [US7] Hook event publishing into task update in backend/src/api/tasks.py
-- [ ] T091 [US7] Hook event publishing into task complete in backend/src/api/tasks.py
-- [ ] T092 [US7] Hook event publishing into task delete in backend/src/api/tasks.py
-- [ ] T093 [US7] Implement retry logic for failed publishes in backend/src/events/publisher.py
-- [ ] T094 [US7] Create scheduled job for event cleanup (7-day retention) in backend/src/services/event_service.py
+- [x] T086 [US7] Create Dapr pub/sub component config in dapr/components/pubsub.yaml
+- [x] T087 [US7] Implement EventPublisher.publish() method in backend/src/events/publisher.py
+- [x] T088 [US7] Create TaskEventService for event creation/retry in backend/src/services/task_event_service.py
+- [x] T089 [US7] Hook event publishing into task create in backend/src/api/tasks.py
+- [x] T090 [US7] Hook event publishing into task update in backend/src/api/tasks.py
+- [x] T091 [US7] Hook event publishing into task complete in backend/src/api/tasks.py
+- [x] T092 [US7] Hook event publishing into task delete in backend/src/api/tasks.py
+- [x] T093 [US7] Implement retry logic for failed publishes in backend/src/events/publisher.py
+- [x] T094 [US7] Create scheduled job for event cleanup (7-day retention) in backend/src/services/task_event_service.py
 
 **Checkpoint**: User Story 7 complete - events publish independently
 
@@ -249,17 +249,17 @@
 
 ### Tests for User Story 8
 
-- [ ] T095 [P] [US8] Smoke test script for deployed environment in scripts/smoke-test.sh
+- [x] T095 [P] [US8] Smoke test script for deployed environment in scripts/smoke-test.sh
 
 ### Implementation for User Story 8
 
-- [ ] T096 [US8] Create Dapr component for Kafka in helm/todo-app/templates/dapr-components.yaml
-- [ ] T097 [US8] Update Helm values with Dapr sidecar injection in helm/todo-app/values.yaml
-- [ ] T098 [US8] Create values-production.yaml for DOKS in helm/todo-app/values-production.yaml
-- [ ] T099 [US8] Create GitHub Actions workflow for DOKS deploy in .github/workflows/deploy-doks.yaml
-- [ ] T100 [US8] Configure DO Container Registry secrets in .github/workflows/deploy-doks.yaml
-- [ ] T101 [US8] Add health check enhancements for Dapr readiness in backend/src/api/health.py
-- [ ] T102 [US8] Create deployment documentation in docs/deployment-doks.md
+- [x] T096 [US8] Create Dapr component for Kafka in helm/todo-app/templates/dapr-components.yaml
+- [x] T097 [US8] Update Helm values with Dapr sidecar injection in helm/todo-app/values.yaml
+- [x] T098 [US8] Create values-production.yaml for DOKS in helm/todo-app/values-production.yaml
+- [x] T099 [US8] Create GitHub Actions workflow for DOKS deploy in .github/workflows/deploy-doks.yaml
+- [x] T100 [US8] Configure DO Container Registry secrets in .github/workflows/deploy-doks.yaml
+- [x] T101 [US8] Add health check enhancements for Dapr readiness in backend/src/api/health.py
+- [x] T102 [US8] Create deployment documentation in docs/deployment-doks.md
 - [ ] T103 [US8] Run end-to-end validation on deployed cluster
 
 **Checkpoint**: User Story 8 complete - production deployment works
@@ -270,13 +270,13 @@
 
 **Purpose**: Final quality improvements across all stories
 
-- [ ] T104 [P] Update API documentation with Phase 5 endpoints in backend/src/main.py (OpenAPI)
-- [ ] T105 [P] Add error handling for all new endpoints in backend/src/api/
-- [ ] T106 [P] Add request logging middleware enhancement in backend/src/middleware/logging.py
+- [x] T104 [P] Update API documentation with Phase 5 endpoints in backend/src/main.py (OpenAPI)
+- [x] T105 [P] Add error handling for all new endpoints in backend/src/api/
+- [x] T106 [P] Add request logging middleware enhancement in backend/src/config/logging.py
 - [ ] T107 Run quickstart.md validation scenarios
 - [ ] T108 Performance test filter queries with 1000 tasks
-- [ ] T109 Security review: verify user isolation on all new endpoints
-- [ ] T110 Update project README with Phase 5 features
+- [x] T109 Security review: verify user isolation on all new endpoints (verified in tags.py, reminders.py, tasks.py)
+- [x] T110 Update project README with Phase 5 features
 
 ---
 

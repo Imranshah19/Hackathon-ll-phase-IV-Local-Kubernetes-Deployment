@@ -4,11 +4,23 @@ A full-stack Todo application with AI-powered natural language interface built u
 
 ## Features
 
+### Core Features
 - **User Authentication**: Secure JWT-based login/registration
 - **Task Management**: Full CRUD operations for todos
 - **AI Chat Interface**: Manage tasks using natural language
 - **Conversation History**: Persistent chat sessions
 - **Confidence Scoring**: AI interpretation with fallback to CLI commands
+
+### Phase 5 Advanced Features
+- **Priority Management**: Assign priority levels (Critical/High/Medium/Low/None) with color-coded indicators
+- **Tags & Categorization**: Create, assign, and filter tasks by custom tags
+- **Advanced Filtering**: Filter by status, priority, due date, tags, and search text
+- **Smart Sorting**: Sort by created_at, updated_at, priority, due date, or title
+- **Recurring Tasks**: Daily, weekly, monthly, yearly recurrence with auto-generation
+- **Task Reminders**: Schedule up to 3 reminders per task with real-time SSE notifications
+- **Bilingual Support**: Urdu/Roman Urdu natural language commands with RTL display
+- **Event-Driven Architecture**: Dapr pub/sub with Kafka for async task events
+- **Cloud-Native Deployment**: DigitalOcean Kubernetes (DOKS) with GitHub Actions CI/CD
 
 ## Tech Stack
 
@@ -153,7 +165,8 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - **Phase 1**: Constitution + Specification + Planning
 - **Phase 2**: Backend + Frontend Implementation
 - **Phase 3**: AI Integration + Deployment
-- **Phase 4**: Local Kubernetes Deployment (Current)
+- **Phase 4**: Local Kubernetes Deployment
+- **Phase 5**: Advanced Features + Cloud Deployment (Current)
 
 See [docs/](./docs/) for detailed phase documentation.
 
@@ -252,6 +265,77 @@ See [docs/ai-ops.md](./docs/ai-ops.md) for full AI-Ops guide.
 | [docs/deployment.md](./docs/deployment.md) | Full deployment guide |
 | [docs/ai-ops.md](./docs/ai-ops.md) | AI-Ops integration guide |
 | [docs/troubleshooting.md](./docs/troubleshooting.md) | Common issues & solutions |
+
+---
+
+## Phase 5: Advanced Features & Cloud Deployment
+
+### New API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/tags` | List user's tags |
+| POST | `/api/tags` | Create tag |
+| PATCH | `/api/tags/{id}` | Update tag |
+| DELETE | `/api/tags/{id}` | Delete tag |
+| GET | `/api/reminders` | List reminders |
+| POST | `/api/reminders` | Create reminder |
+| DELETE | `/api/reminders/{id}` | Delete reminder |
+| GET | `/api/reminders/stream` | SSE notification stream |
+| POST | `/api/tasks/{id}/complete` | Complete task (handles recurrence) |
+| GET | `/metrics` | Prometheus metrics |
+
+### Enhanced Task Endpoints
+
+```bash
+# Create task with priority, tags, and recurrence
+POST /api/tasks
+{
+  "title": "Weekly meeting",
+  "priority": 2,
+  "tag_ids": ["uuid1", "uuid2"],
+  "recurrence": {
+    "frequency": "weekly",
+    "interval": 1,
+    "end_type": "never"
+  }
+}
+
+# Filter and sort tasks
+GET /api/tasks?priority=1,2&tags=uuid1&due_from=2026-01-01&sort_by=priority&sort_order=asc
+```
+
+### Urdu Chat Commands
+
+```
+"نیا کام شامل کرو: دودھ خریدنا"  → Creates task "دودھ خریدنا"
+"میرے کام دکھاؤ"                  → Lists pending tasks
+"کام مکمل کرو"                    → Marks task as complete
+```
+
+### Dapr Integration
+
+The application uses Dapr for event-driven architecture:
+
+```bash
+# Run backend with Dapr sidecar
+dapr run --app-id todo-backend \
+         --app-port 8000 \
+         --resources-path ./dapr/components \
+         -- uvicorn src.main:app --host 0.0.0.0 --port 8000
+```
+
+### DigitalOcean Deployment
+
+```bash
+# Deploy to DOKS with GitHub Actions (automatic on push to main)
+# Or manually with Helm:
+helm upgrade --install todo-app ./helm/todo-app \
+  --namespace todo-app \
+  -f ./helm/todo-app/values-production.yaml
+```
+
+See [docs/deployment-doks.md](./docs/deployment-doks.md) for full DOKS deployment guide.
 
 ---
 

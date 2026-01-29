@@ -5,6 +5,8 @@
  *
  * Renders user and assistant messages with appropriate styling.
  * Assistant messages can display confidence indicators and task data.
+ *
+ * Phase 5 (US6): Supports RTL text direction for Urdu messages.
  */
 
 import { Message, Task } from "@/lib/api";
@@ -14,10 +16,24 @@ interface MessageBubbleProps {
   task?: Task | null;
   tasks?: Task[] | null;
   action?: string | null;
+  language?: string; // Phase 5 (US6): en, ur, or mixed
 }
 
-export function MessageBubble({ message, task, tasks }: MessageBubbleProps) {
+/**
+ * Detect if text contains Urdu/Arabic script characters.
+ */
+function containsUrdu(text: string): boolean {
+  // Check for Arabic/Urdu Unicode block characters
+  return /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+}
+
+export function MessageBubble({ message, task, tasks, language }: MessageBubbleProps) {
   const isUser = message.role === "user";
+
+  // Phase 5 (US6): Determine text direction
+  // Use RTL for Urdu content or if language explicitly set to 'ur'
+  const isRtl = language === "ur" || containsUrdu(message.content);
+  const textDirection = isRtl ? "rtl" : "ltr";
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
@@ -27,9 +43,10 @@ export function MessageBubble({ message, task, tasks }: MessageBubbleProps) {
             ? "bg-blue-500 text-white"
             : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
         }`}
+        dir={textDirection}
       >
         {/* Message content */}
-        <p className="whitespace-pre-wrap">{message.content}</p>
+        <p className={`whitespace-pre-wrap ${isRtl ? "font-urdu" : ""}`}>{message.content}</p>
 
         {/* Assistant-specific metadata */}
         {!isUser && (

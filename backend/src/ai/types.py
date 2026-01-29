@@ -15,13 +15,20 @@ From data-model.md:
 - confidence: 0.0-1.0 interpretation confidence
 - clarification_needed: Question to ask user if ambiguous
 - suggested_cli: Equivalent Bonsai CLI command
+
+Phase 5 additions:
+- detected_language: Language of the input (en/ur/mixed)
+- priority: Priority level extracted from input (1-5)
 """
 
 from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from src.ai.urdu import Language
 
 
 class CommandAction(str, Enum):
@@ -95,6 +102,10 @@ class InterpretedCommand:
     due_date: date | None = None
     status_filter: StatusFilter | None = None
 
+    # Phase 5: Additional fields
+    priority: int | None = None  # 1-5 priority level
+    detected_language: "Language | None" = None  # en/ur/mixed
+
     # Clarification fields
     clarification_needed: str | None = None
     multiple_matches: list[UUID] = field(default_factory=list)
@@ -142,6 +153,8 @@ class InterpretedCommand:
             "title": self.title,
             "due_date": self.due_date.isoformat() if self.due_date else None,
             "status_filter": self.status_filter.value if self.status_filter else None,
+            "priority": self.priority,
+            "detected_language": self.detected_language.value if self.detected_language else None,
             "clarification_needed": self.clarification_needed,
             "multiple_matches": [str(m) for m in self.multiple_matches],
             "confidence_level": self.confidence_level.value,

@@ -76,9 +76,48 @@ def create_app() -> FastAPI:
     """
     app = FastAPI(
         title="AutoSaaS Todo API",
-        description="AI Full-Stack Scaffold Engine - Todo Backend",
-        version="0.1.0",
+        description="""
+AI Full-Stack Scaffold Engine - Todo Backend
+
+## Phase 5 Advanced Features
+
+### Task Management
+- **Priority Management**: Assign priority levels (1-5) to tasks with visual indicators
+- **Tags & Categorization**: Create and assign tags to organize tasks
+- **Advanced Filtering**: Filter by status, priority, due date, tags, and search text
+- **Sorting**: Sort tasks by created_at, updated_at, priority, due date, or title
+
+### Recurring Tasks
+- Create tasks with recurrence patterns (daily, weekly, monthly, yearly)
+- Automatic generation of next instance on completion
+- Series update/delete options
+
+### Reminders
+- Schedule up to 3 reminders per task
+- Real-time notifications via Server-Sent Events (SSE)
+- Auto-cancel on task completion
+
+### Bilingual Support
+- Urdu/Roman Urdu natural language processing
+- RTL text display support
+
+### Cloud-Native
+- Event-driven architecture with Dapr pub/sub
+- Prometheus metrics endpoint
+- Kubernetes-ready health checks
+""",
+        version="0.5.0",
         lifespan=lifespan,
+        openapi_tags=[
+            {"name": "Health", "description": "Health check endpoints for Kubernetes"},
+            {"name": "Metrics", "description": "Prometheus metrics endpoint"},
+            {"name": "Authentication", "description": "User registration and JWT authentication"},
+            {"name": "Tasks", "description": "Task CRUD with priority, due dates, tags, and recurrence"},
+            {"name": "Tags", "description": "Tag management for task categorization"},
+            {"name": "Reminders", "description": "Task reminders with SSE notifications"},
+            {"name": "Chat", "description": "AI-powered natural language task management"},
+            {"name": "Conversations", "description": "Chat conversation history management"},
+        ],
     )
 
     # -------------------------------------------------------------------------

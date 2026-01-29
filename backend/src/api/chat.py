@@ -53,6 +53,7 @@ class ChatMessageResponse(BaseModel):
     message_id: UUID = Field(description="The assistant message ID")
     task: dict[str, Any] | None = Field(default=None, description="Task data if action affected a task")
     tasks: list[dict[str, Any]] | None = Field(default=None, description="Task list if action was list")
+    language: str = Field(default="en", description="Detected/response language (en, ur, mixed) - Phase 5 US6")
 
 
 class ConfirmActionRequest(BaseModel):
@@ -110,6 +111,7 @@ async def send_message(
             message_id=message.id,
             task=response.task,
             tasks=response.tasks,
+            language=response.language,
         )
 
     except ValueError as e:
@@ -166,6 +168,7 @@ async def confirm_action(
             message_id=message.id,
             task=response.task,
             tasks=response.tasks,
+            language=response.language,
         )
 
     except ValueError as e:

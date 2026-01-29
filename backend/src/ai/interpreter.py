@@ -9,9 +9,15 @@ Implements:
 - FR-007: Handle ambiguous inputs by asking clarifying questions
 - FR-011: 5-second timeout on AI operations
 - FR-014: Preserve user intent without adding/modifying unspecified parameters
+- FR-021: Automatic language detection (Phase 5 - US6)
+- FR-022: Respond in same language as input (Phase 5 - US6)
 
 Architecture (Constitution Principle VII - AI as Interpreter):
     User Message -> Interpreter -> InterpretedCommand -> Executor -> Response
+
+Phase 5 Enhancement:
+    For Urdu text, local pattern matching is tried first for faster response.
+    Falls back to OpenAI for complex or mixed-language queries.
 """
 
 import asyncio
@@ -28,6 +34,15 @@ from src.ai.prompts.intent import (
     build_intent_prompt,
 )
 from src.ai.types import CommandAction, InterpretedCommand, StatusFilter
+from src.ai.urdu import (
+    Language,
+    detect_language,
+    match_urdu_command,
+    extract_urdu_priority,
+    extract_urdu_time,
+    extract_task_title_urdu,
+    URDU_SYSTEM_PROMPT_ADDITION,
+)
 from src.config.ai_config import AIConfig, get_ai_config
 
 logger = logging.getLogger(__name__)
@@ -82,7 +97,19 @@ class AIInterpreter:
         Raises:
             asyncio.TimeoutError: If AI takes longer than configured timeout
         """
-        # Build prompt with context
+        # Phase 5 (US6): Detect language and try Urdu patterns first
+        lang_result = detect_language(user_message)
+        detected_language = lang_result.language
+
+        if detected_language == Language.URDU and lang_result.confidence > 0.5:
+            # Try local Urdu pattern matching (faster, no API call)
+            urdu_command = self._interpret_urdu(user_message, user_tasks)
+            if urdu_command and urdu_command.confidence >= 0.8:
+                logger.info(f"Urdu pattern matched: {urdu_command.action.value}")
+                urdu_command.detected_language = Language.URDU
+                return urdu_command
+
+        # Build prompt with context (include Urdu enhancement for mixed text)
         messages = build_intent_prompt(
             user_message=user_message,
             conversation_history=conversation_history,
@@ -97,7 +124,9 @@ class AIInterpreter:
             )
 
             # Parse the function call response
-            return self._parse_response(user_message, response, user_tasks)
+            command = self._parse_response(user_message, response, user_tasks)
+            command.detected_language = detected_language
+            return command
 
         except asyncio.TimeoutError:
             logger.warning(f"AI interpretation timed out after {self.config.ai_timeout_seconds}s")
@@ -105,6 +134,59 @@ class AIInterpreter:
         except Exception as e:
             logger.error(f"AI interpretation failed: {e}")
             return self._create_error_fallback(user_message, str(e))
+
+    def _interpret_urdu(
+        self,
+        user_message: str,
+        user_tasks: list[dict[str, Any]] | None = None,
+    ) -> InterpretedCommand | None:
+        """
+        Interpret Urdu text using local pattern matching (Phase 5 - US6).
+
+        This provides fast interpretation for common Urdu commands without
+        requiring an API call to OpenAI.
+
+        Args:
+            user_message: The Urdu text to interpret
+            user_tasks: User's existing tasks for reference
+
+        Returns:
+            InterpretedCommand if a pattern matches, None otherwise
+        """
+        action, confidence = match_urdu_command(user_message)
+
+        if action is None:
+            return None
+
+        # Extract additional parameters
+        title = extract_task_title_urdu(user_message, action)
+        priority = extract_urdu_priority(user_message)
+        time_ref = extract_urdu_time(user_message)
+
+        # Parse due date from time reference
+        due_date = None
+        if time_ref:
+            due_date = self._parse_due_date(time_ref)
+
+        # Build CLI command
+        suggested_cli = self._build_cli_command(
+            action=action,
+            title=title,
+            task_id=None,
+            due_date=due_date,
+            status_filter=None,
+        )
+
+        return InterpretedCommand(
+            original_text=user_message,
+            action=action,
+            confidence=confidence,
+            suggested_cli=suggested_cli,
+            title=title,
+            due_date=due_date,
+            priority=priority,
+            detected_language=Language.URDU,
+        )
 
     async def _call_openai(self, messages: list[dict[str, str]]) -> dict[str, Any]:
         """

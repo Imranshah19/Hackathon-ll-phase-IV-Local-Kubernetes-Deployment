@@ -23,6 +23,8 @@ Implements:
 - FR-006: Persist conversation history
 - FR-008: CLI fallback for low confidence
 - FR-010: Log AI interpretations with confidence
+- FR-021: Automatic language detection (Phase 5 - US6)
+- FR-022: Respond in same language as input (Phase 5 - US6)
 """
 
 import logging
@@ -44,6 +46,11 @@ from src.ai.prompts.response import (
     build_fallback_response,
 )
 from src.ai.types import CommandAction, InterpretedCommand, ConfidenceLevel
+from src.ai.urdu import (
+    Language,
+    get_response as get_urdu_response,
+    format_task_list_urdu,
+)
 from src.config.ai_config import AIConfig, get_ai_config
 from src.models.message import Message, MessagePublic
 from src.models.task import Task
@@ -64,6 +71,7 @@ class ChatResponse:
     is_fallback: bool = False
     task: dict[str, Any] | None = None
     tasks: list[dict[str, Any]] | None = None
+    language: str = "en"  # Phase 5 (US6): Response language (en/ur/mixed)
 
 
 class ChatService:
@@ -255,92 +263,123 @@ class ChatService:
         result: ExecutionResult,
     ) -> ChatResponse:
         """Build ChatResponse from execution result."""
+        # Phase 5 (US6): Determine response language
+        lang = interpreted.detected_language or Language.ENGLISH
+        lang_str = lang.value if hasattr(lang, 'value') else "en"
+        use_urdu = lang == Language.URDU
+
         if not result.success:
+            error_msg = result.error_message or "Something went wrong."
+            if use_urdu:
+                error_msg = get_urdu_response("error_occurred", Language.URDU)
             return ChatResponse(
-                message=result.error_message or "Something went wrong.",
+                message=error_msg,
                 confidence=interpreted.confidence,
                 action=interpreted.action.value,
                 suggested_cli=interpreted.suggested_cli,
                 is_fallback=True,
+                language=lang_str,
             )
 
         # Build action-specific response
         if result.action == CommandAction.ADD:
-            message = build_add_response(
-                success=True,
-                title=result.task.get("title") if result.task else None,
-            )
+            title = result.task.get("title") if result.task else None
+            if use_urdu:
+                message = get_urdu_response("task_created", Language.URDU, title=title or "")
+            else:
+                message = build_add_response(success=True, title=title)
             return ChatResponse(
                 message=message,
                 confidence=interpreted.confidence,
                 action=interpreted.action.value,
                 task=result.task,
+                language=lang_str,
             )
 
         elif result.action == CommandAction.LIST:
-            message = build_list_response(
-                success=True,
-                tasks=result.tasks,
-                status_filter=interpreted.status_filter.value if interpreted.status_filter else None,
-            )
+            if use_urdu and result.tasks:
+                message = format_task_list_urdu(result.tasks)
+            else:
+                message = build_list_response(
+                    success=True,
+                    tasks=result.tasks,
+                    status_filter=interpreted.status_filter.value if interpreted.status_filter else None,
+                )
             return ChatResponse(
                 message=message,
                 confidence=interpreted.confidence,
                 action=interpreted.action.value,
                 tasks=result.tasks,
+                language=lang_str,
             )
 
         elif result.action == CommandAction.COMPLETE:
             already_done = result.data.get("already_completed") if result.data else False
+            title = result.task.get("title") if result.task else None
             if already_done:
-                message = f"Task \"{result.task.get('title')}\" was already completed."
+                message = f"Task \"{title}\" was already completed."
+                if use_urdu:
+                    message = f"یہ کام پہلے سے مکمل ہے: {title}"
             else:
-                message = build_complete_response(
+                if use_urdu:
+                    message = get_urdu_response("task_completed", Language.URDU, title=title or "")
+                else:
+                    message = build_complete_response(success=True, title=title)
+            return ChatResponse(
+                message=message,
+                confidence=interpreted.confidence,
+                action=interpreted.action.value,
+                task=result.task,
+                language=lang_str,
+            )
+
+        elif result.action == CommandAction.UPDATE:
+            old_title = result.data.get("old_title") if result.data else None
+            new_title = result.task.get("title") if result.task else None
+            if use_urdu:
+                message = get_urdu_response("task_updated", Language.URDU, title=new_title or "")
+            else:
+                message = build_update_response(
                     success=True,
-                    title=result.task.get("title") if result.task else None,
+                    old_title=old_title,
+                    new_title=new_title,
                 )
             return ChatResponse(
                 message=message,
                 confidence=interpreted.confidence,
                 action=interpreted.action.value,
                 task=result.task,
-            )
-
-        elif result.action == CommandAction.UPDATE:
-            old_title = result.data.get("old_title") if result.data else None
-            message = build_update_response(
-                success=True,
-                old_title=old_title,
-                new_title=result.task.get("title") if result.task else None,
-            )
-            return ChatResponse(
-                message=message,
-                confidence=interpreted.confidence,
-                action=interpreted.action.value,
-                task=result.task,
+                language=lang_str,
             )
 
         elif result.action == CommandAction.DELETE:
-            message = build_delete_response(
-                success=True,
-                title=result.task.get("title") if result.task else None,
-            )
+            title = result.task.get("title") if result.task else None
+            if use_urdu:
+                message = get_urdu_response("task_deleted", Language.URDU)
+            else:
+                message = build_delete_response(success=True, title=title)
             return ChatResponse(
                 message=message,
                 confidence=interpreted.confidence,
                 action=interpreted.action.value,
                 task=result.task,
+                language=lang_str,
             )
 
         # Default
+        default_msg = "ہو گیا!" if use_urdu else "Done!"
         return ChatResponse(
-            message="Done!",
+            message=default_msg,
             confidence=interpreted.confidence,
             action=interpreted.action.value,
+            language=lang_str,
         )
 
     def _handle_fallback(self, interpreted: InterpretedCommand) -> ChatResponse:
         """Handle fallback scenario."""
+        lang = interpreted.detected_language or Language.ENGLISH
+        lang_str = lang.value if hasattr(lang, 'value') else "en"
+
         fallback = self.fallback_handler.create_fallback(interpreted)
 
         return ChatResponse(
@@ -349,18 +388,30 @@ class ChatService:
             action=interpreted.action.value if interpreted.action != CommandAction.UNKNOWN else None,
             suggested_cli=fallback.suggested_cli,
             is_fallback=True,
+            language=lang_str,
         )
 
     def _handle_confirmation(self, interpreted: InterpretedCommand) -> ChatResponse:
         """Handle confirmation request."""
+        lang = interpreted.detected_language or Language.ENGLISH
+        lang_str = lang.value if hasattr(lang, 'value') else "en"
+        use_urdu = lang == Language.URDU
+
         confirmation = self.fallback_handler.create_confirmation(interpreted)
 
+        # Use Urdu confirmation message if detected
+        message = confirmation.message
+        if use_urdu:
+            action_name = interpreted.action.value if interpreted.action else "عمل"
+            message = get_urdu_response("confirmation_needed", Language.URDU, action=action_name)
+
         return ChatResponse(
-            message=confirmation.message,
+            message=message,
             confidence=interpreted.confidence,
             action=interpreted.action.value,
             suggested_cli=confirmation.suggested_cli,
             needs_confirmation=True,
+            language=lang_str,
         )
 
     def _handle_ai_unavailable(self) -> ChatResponse:
