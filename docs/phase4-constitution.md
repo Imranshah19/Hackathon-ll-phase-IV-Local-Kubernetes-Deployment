@@ -21,7 +21,7 @@ Deploy the AI-powered Todo Chatbot (Phase III) on a **local Kubernetes cluster**
   - ✅ Dockerfiles & Helm Charts
   - ✅ Deployment scripts
   - ✅ Verification of Todo features
-  - ⏳ Demo video (<90 sec)
+  - ✅ Demo video (<90 sec)
   - ✅ GitHub Repo link
 
 ---
@@ -45,10 +45,10 @@ Deploy the AI-powered Todo Chatbot (Phase III) on a **local Kubernetes cluster**
 | T2 | Generate Dockerfiles for frontend & backend | Claude Code, Gordon | ✅ Done |
 | T3 | Build Docker images locally | Docker Desktop | ✅ Done |
 | T4 | Create Helm Charts for deployment | Claude Code, kubectl-ai | ✅ Done |
-| T5 | Deploy on Minikube | Helm, Minikube | ✅ Ready |
-| T6 | Monitor pods & scale replicas | kubectl-ai, kagent | ✅ Ready |
-| T7 | Test core Todo features | Phase III Chatbot | ⏳ Pending |
-| T8 | Document deployment & prepare demo | Markdown + Video | ⏳ Pending |
+| T5 | Deploy on Minikube | Helm, Minikube | ✅ Done |
+| T6 | Monitor pods & scale replicas | kubectl-ai, kagent | ✅ Done |
+| T7 | Test core Todo features | Phase III Chatbot | ✅ Done |
+| T8 | Document deployment & prepare demo | Markdown + Video | ✅ Done |
 
 ---
 
