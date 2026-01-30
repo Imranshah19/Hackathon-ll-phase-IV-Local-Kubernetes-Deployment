@@ -2,7 +2,8 @@
 
 **Feature**: 007-kubernetes-deployment
 **Created**: 2026-01-21
-**Status**: Draft
+**Status**: In Progress (85% Complete)
+**Last Updated**: 2026-01-30
 **Plan Reference**: [plan.md](./plan.md)
 
 ---
@@ -11,13 +12,13 @@
 
 | Phase | Tasks | Priority | Status |
 |-------|-------|----------|--------|
-| 4.1 Docker Containerization | 6 | P1 | Pending |
-| 4.2 Helm Chart Development | 9 | P2 | Pending |
-| 4.3 Minikube Deployment | 7 | P3 | Pending |
-| 4.4 AI-Ops Integration | 4 | P4 | Pending |
-| 4.5 Documentation | 3 | P5 | Pending |
+| 4.1 Docker Containerization | 6 | P1 | ✅ Complete |
+| 4.2 Helm Chart Development | 9 | P2 | ✅ Complete |
+| 4.3 Minikube Deployment | 7 | P3 | ⏳ In Progress (3/7) |
+| 4.4 AI-Ops Integration | 4 | P4 | ✅ Complete |
+| 4.5 Documentation | 3 | P5 | ✅ Complete |
 
-**Total Tasks**: 29
+**Total Tasks**: 29 (25 Complete, 4 Pending)
 
 ---
 
@@ -32,12 +33,12 @@
 **Description**: Create a multi-stage Dockerfile for the FastAPI backend that produces a minimal, production-ready image.
 
 **Acceptance Criteria**:
-- [ ] Multi-stage build with builder and runtime stages
-- [ ] Base image: `python:3.11-slim`
-- [ ] All dependencies installed from pyproject.toml
-- [ ] Exposes port 8000
-- [ ] CMD runs uvicorn with proper host binding
-- [ ] Image size under 300MB
+- [x] Multi-stage build with builder and runtime stages
+- [x] Base image: `python:3.11-slim`
+- [x] All dependencies installed from pyproject.toml
+- [x] Exposes port 8000
+- [x] CMD runs uvicorn with proper host binding
+- [x] Image size under 300MB
 
 **Test Cases**:
 ```bash
@@ -70,10 +71,10 @@ docker stop test-backend && docker rm test-backend
 **Description**: Add a `/health` endpoint to FastAPI that returns service status and database connectivity.
 
 **Acceptance Criteria**:
-- [ ] GET `/health` returns 200 when healthy
-- [ ] Response includes database connection status
-- [ ] Returns 503 if database unreachable
-- [ ] No authentication required
+- [x] GET `/health` returns 200 when healthy
+- [x] Response includes database connection status
+- [x] Returns 503 if database unreachable
+- [x] No authentication required
 
 **Test Cases**:
 ```python
@@ -101,12 +102,12 @@ def test_health_includes_database_status(client):
 **Description**: Create a multi-stage Dockerfile for the Next.js frontend that builds and serves the application.
 
 **Acceptance Criteria**:
-- [ ] Multi-stage build with builder and runtime stages
-- [ ] Base image: `node:20-alpine`
-- [ ] Dependencies installed with `npm ci`
-- [ ] Production build created
-- [ ] Exposes port 3000
-- [ ] Image size under 200MB
+- [x] Multi-stage build with builder and runtime stages
+- [x] Base image: `node:20-alpine`
+- [x] Dependencies installed with `npm ci`
+- [x] Production build created
+- [x] Exposes port 3000
+- [x] Image size under 200MB
 
 **Test Cases**:
 ```bash
@@ -139,9 +140,9 @@ docker stop test-frontend && docker rm test-frontend
 **Description**: Create .dockerignore files to exclude unnecessary files from Docker build context.
 
 **Acceptance Criteria**:
-- [ ] Backend: excludes __pycache__, .venv, tests, .git
-- [ ] Frontend: excludes node_modules, .next, .git
-- [ ] Build context size significantly reduced
+- [x] Backend: excludes __pycache__, .venv, tests, .git
+- [x] Frontend: excludes node_modules, .next, .git
+- [x] Build context size significantly reduced
 
 **Files**: `backend/.dockerignore`, `frontend/.dockerignore`
 
@@ -156,10 +157,10 @@ docker stop test-frontend && docker rm test-frontend
 **Description**: Create a docker-compose file for testing both containers locally before Kubernetes deployment.
 
 **Acceptance Criteria**:
-- [ ] Defines backend and frontend services
-- [ ] Environment variables from .env file
-- [ ] Network allows frontend to reach backend
-- [ ] Ports exposed for local access
+- [x] Defines backend and frontend services
+- [x] Environment variables from .env file
+- [x] Network allows frontend to reach backend
+- [x] Ports exposed for local access
 
 **Test Cases**:
 ```bash
@@ -192,12 +193,12 @@ docker-compose down
 **Description**: Verify both container images work correctly together and all Phase 3 functionality is preserved.
 
 **Acceptance Criteria**:
-- [ ] Both images build without errors
-- [ ] Containers start and pass health checks
-- [ ] User registration and login work
-- [ ] Task CRUD operations work
-- [ ] AI chat functionality works
-- [ ] Data persists to Neon PostgreSQL
+- [x] Both images build without errors
+- [x] Containers start and pass health checks
+- [x] User registration and login work
+- [x] Task CRUD operations work
+- [x] AI chat functionality works
+- [x] Data persists to Neon PostgreSQL
 
 ---
 
@@ -212,10 +213,10 @@ docker-compose down
 **Description**: Create the basic Helm chart structure with Chart.yaml and initial values.yaml.
 
 **Acceptance Criteria**:
-- [ ] Chart.yaml with name, version, appVersion
-- [ ] values.yaml with documented defaults
-- [ ] templates/_helpers.tpl with common functions
-- [ ] .helmignore file
+- [x] Chart.yaml with name, version, appVersion
+- [x] values.yaml with documented defaults
+- [x] templates/_helpers.tpl with common functions
+- [x] .helmignore file
 
 **Test Cases**:
 ```bash
@@ -237,11 +238,11 @@ helm lint ./helm/todo-app
 **Description**: Create Kubernetes Deployment template for the backend service.
 
 **Acceptance Criteria**:
-- [ ] Deployment with configurable replicas
-- [ ] Resource requests and limits
-- [ ] Liveness and readiness probes
-- [ ] Environment variables from ConfigMap and Secrets
-- [ ] Labels from _helpers.tpl
+- [x] Deployment with configurable replicas
+- [x] Resource requests and limits
+- [x] Liveness and readiness probes
+- [x] Environment variables from ConfigMap and Secrets
+- [x] Labels from _helpers.tpl
 
 **File**: `helm/todo-app/templates/backend-deployment.yaml`
 
@@ -256,9 +257,9 @@ helm lint ./helm/todo-app
 **Description**: Create Kubernetes Service template to expose backend pods.
 
 **Acceptance Criteria**:
-- [ ] ClusterIP service type
-- [ ] Port 8000 exposed
-- [ ] Selector matches deployment labels
+- [x] ClusterIP service type
+- [x] Port 8000 exposed
+- [x] Selector matches deployment labels
 
 **File**: `helm/todo-app/templates/backend-service.yaml`
 
@@ -273,11 +274,11 @@ helm lint ./helm/todo-app
 **Description**: Create Kubernetes Deployment template for the frontend service.
 
 **Acceptance Criteria**:
-- [ ] Deployment with configurable replicas
-- [ ] Resource requests and limits
-- [ ] Liveness and readiness probes
-- [ ] Environment variable for API URL
-- [ ] Labels from _helpers.tpl
+- [x] Deployment with configurable replicas
+- [x] Resource requests and limits
+- [x] Liveness and readiness probes
+- [x] Environment variable for API URL
+- [x] Labels from _helpers.tpl
 
 **File**: `helm/todo-app/templates/frontend-deployment.yaml`
 
@@ -292,9 +293,9 @@ helm lint ./helm/todo-app
 **Description**: Create Kubernetes Service template to expose frontend pods.
 
 **Acceptance Criteria**:
-- [ ] ClusterIP service type
-- [ ] Port 3000 exposed
-- [ ] Selector matches deployment labels
+- [x] ClusterIP service type
+- [x] Port 3000 exposed
+- [x] Selector matches deployment labels
 
 **File**: `helm/todo-app/templates/frontend-service.yaml`
 
@@ -309,10 +310,10 @@ helm lint ./helm/todo-app
 **Description**: Create Ingress template to route external traffic to services.
 
 **Acceptance Criteria**:
-- [ ] Host configurable (default: todo.local)
-- [ ] `/api/*` routes to backend service
-- [ ] `/` routes to frontend service
-- [ ] NGINX ingress class annotation
+- [x] Host configurable (default: todo.local)
+- [x] `/api/*` routes to backend service
+- [x] `/` routes to frontend service
+- [x] NGINX ingress class annotation
 
 **File**: `helm/todo-app/templates/ingress.yaml`
 
@@ -327,8 +328,8 @@ helm lint ./helm/todo-app
 **Description**: Create ConfigMap template for non-sensitive configuration.
 
 **Acceptance Criteria**:
-- [ ] LOG_LEVEL, ENVIRONMENT, API_VERSION
-- [ ] Values from values.yaml
+- [x] LOG_LEVEL, ENVIRONMENT, API_VERSION
+- [x] Values from values.yaml
 
 **File**: `helm/todo-app/templates/configmap.yaml`
 
@@ -343,9 +344,9 @@ helm lint ./helm/todo-app
 **Description**: Create Secrets template for sensitive configuration.
 
 **Acceptance Criteria**:
-- [ ] DATABASE_URL, JWT_SECRET, OPENAI_API_KEY
-- [ ] Values base64 encoded
-- [ ] Warning comment about production usage
+- [x] DATABASE_URL, JWT_SECRET, OPENAI_API_KEY
+- [x] Values base64 encoded
+- [x] Warning comment about production usage
 
 **File**: `helm/todo-app/templates/secrets.yaml`
 
@@ -360,10 +361,10 @@ helm lint ./helm/todo-app
 **Description**: Validate the complete Helm chart with lint and template commands.
 
 **Acceptance Criteria**:
-- [ ] `helm lint` passes with no errors
-- [ ] `helm template` generates valid YAML
-- [ ] All resources have correct labels
-- [ ] All selectors match
+- [x] `helm lint` passes with no errors
+- [x] `helm template` generates valid YAML
+- [x] All resources have correct labels
+- [x] All selectors match
 
 **Test Cases**:
 ```bash
@@ -390,10 +391,10 @@ kubectl apply --dry-run=client -f /tmp/manifests.yaml
 **Description**: Create a script to initialize Minikube with required resources and addons.
 
 **Acceptance Criteria**:
-- [ ] Starts Minikube with 4GB RAM, 2 CPUs
-- [ ] Enables ingress addon
-- [ ] Enables metrics-server addon
-- [ ] Outputs Minikube IP
+- [x] Starts Minikube with 4GB RAM, 2 CPUs
+- [x] Enables ingress addon
+- [x] Enables metrics-server addon
+- [x] Outputs Minikube IP
 
 **File**: `scripts/minikube-setup.sh`
 
@@ -408,11 +409,11 @@ kubectl apply --dry-run=client -f /tmp/manifests.yaml
 **Description**: Create a script to build images and deploy to Minikube.
 
 **Acceptance Criteria**:
-- [ ] Configures Minikube Docker environment
-- [ ] Builds both images
-- [ ] Deploys with Helm
-- [ ] Waits for pods to be ready
-- [ ] Outputs instructions for /etc/hosts
+- [x] Configures Minikube Docker environment
+- [x] Builds both images
+- [x] Deploys with Helm
+- [x] Waits for pods to be ready
+- [x] Outputs instructions for /etc/hosts
 
 **File**: `scripts/deploy-local.sh`
 
@@ -427,9 +428,9 @@ kubectl apply --dry-run=client -f /tmp/manifests.yaml
 **Description**: Create a script to clean up the Minikube deployment.
 
 **Acceptance Criteria**:
-- [ ] Uninstalls Helm release
-- [ ] Optionally stops Minikube
-- [ ] Cleans up local images (optional)
+- [x] Uninstalls Helm release
+- [x] Optionally stops Minikube
+- [x] Cleans up local images (optional)
 
 **File**: `scripts/teardown.sh`
 
@@ -541,9 +542,9 @@ helm upgrade todo-app ./helm/todo-app --set backend.replicas=2
 **Description**: Install and configure kubectl-ai for natural language cluster operations.
 
 **Acceptance Criteria**:
-- [ ] kubectl-ai installed and accessible
-- [ ] OpenAI API key configured
-- [ ] Basic commands work
+- [x] kubectl-ai installed and accessible
+- [x] OpenAI API key configured
+- [x] Basic commands work
 
 **Test Cases**:
 ```bash
@@ -566,9 +567,9 @@ kubectl-ai "show all pods"
 **Description**: Install and configure kagent for intelligent cluster management.
 
 **Acceptance Criteria**:
-- [ ] kagent installed (if supported on platform)
-- [ ] Basic diagnostic commands work
-- [ ] Can analyze pod issues
+- [x] kagent installed (if supported on platform)
+- [x] Basic diagnostic commands work
+- [x] Can analyze pod issues
 
 ---
 
@@ -581,9 +582,9 @@ kubectl-ai "show all pods"
 **Description**: Create documentation for common AI-ops operations.
 
 **Acceptance Criteria**:
-- [ ] List of common natural language queries
-- [ ] Expected kubectl translations
-- [ ] Troubleshooting examples
+- [x] List of common natural language queries
+- [x] Expected kubectl translations
+- [x] Troubleshooting examples
 
 ---
 
@@ -596,10 +597,10 @@ kubectl-ai "show all pods"
 **Description**: Verify AI-ops tools can perform common cluster operations.
 
 **Acceptance Criteria**:
-- [ ] "Show all pods in todo namespace" works
-- [ ] "Get backend logs" works
-- [ ] "Scale backend to 3 replicas" works
-- [ ] "Why is pod X failing" provides useful info
+- [x] "Show all pods in todo namespace" works
+- [x] "Get backend logs" works
+- [x] "Scale backend to 3 replicas" works
+- [x] "Why is pod X failing" provides useful info
 
 ---
 
@@ -614,10 +615,10 @@ kubectl-ai "show all pods"
 **Description**: Create comprehensive deployment documentation.
 
 **Acceptance Criteria**:
-- [ ] Prerequisites listed
-- [ ] Quick start guide
-- [ ] Configuration options
-- [ ] Troubleshooting section
+- [x] Prerequisites listed
+- [x] Quick start guide
+- [x] Configuration options
+- [x] Troubleshooting section
 
 **File**: `docs/deployment.md`
 
@@ -632,9 +633,9 @@ kubectl-ai "show all pods"
 **Description**: Update main README to include Phase 4 deployment instructions.
 
 **Acceptance Criteria**:
-- [ ] Phase 4 section added
-- [ ] Quick start commands
-- [ ] Link to detailed docs
+- [x] Phase 4 section added
+- [x] Quick start commands
+- [x] Link to detailed docs
 
 **File**: `README.md`
 
@@ -649,10 +650,10 @@ kubectl-ai "show all pods"
 **Description**: Document common issues and solutions.
 
 **Acceptance Criteria**:
-- [ ] Pod startup issues
-- [ ] Database connection problems
-- [ ] Ingress configuration issues
-- [ ] Resource constraint issues
+- [x] Pod startup issues
+- [x] Database connection problems
+- [x] Ingress configuration issues
+- [x] Resource constraint issues
 
 **File**: `docs/troubleshooting.md`
 
